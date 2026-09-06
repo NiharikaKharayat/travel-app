@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Ferene · Find travel buddies</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="tailwind.config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container pb-[96px]">
+<header class="bg-surface/80 backdrop-blur-xl border-b border-white/15 shadow-sm sticky top-0 z-50 flex justify-between items-center w-full px-margin-mobile h-16">
+  <div class="flex items-center gap-3">
+    
+    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container">
+      <img alt="Your avatar" class="w-full h-full object-cover" src="https://i.pravatar.cc/100?img=68"/>
+    </div>
+    <h1 class="font-display-lg text-[24px] bg-clip-text text-transparent bg-gradient-to-r from-gradient-start to-gradient-end">Ferene</h1>
+  </div>
+  <button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-low text-primary hover:opacity-80 active:scale-95 transition-all">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+  </button>
+</header>
+<main class="flex-1 flex flex-col max-w-[560px] w-full mx-auto relative">
+<section id="view-swipe" class="flex-col items-center px-margin-mobile py-6 gap-6">
+    <div class="card-stack w-full max-w-sm h-[480px]" id="cardStack"></div>
+
+    <div id="matchEmpty" class="hidden flex-col items-center text-center gap-3 py-10">
+      <span class="material-symbols-outlined text-primary text-4xl">explore</span>
+      <p class="font-headline-md text-on-surface">You've seen everyone nearby</p>
+      <p class="font-body-md text-text-muted text-sm max-w-xs">Widen your dates or budget to see more compatible travelers.</p>
+      <button onclick="resetSwipe()" class="mt-2 px-6 py-2.5 rounded-full bg-surface-card border border-outline-variant text-on-surface font-label-md">Start over</button>
+    </div>
+
+    <div class="flex items-center gap-6">
+      <button onclick="swipeCard('left')" class="w-16 h-16 rounded-full bg-surface-card soft-shadow flex items-center justify-center text-outline hover:scale-105 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-2xl">close</span>
+      </button>
+      <button onclick="swipeCard('super')" class="w-14 h-14 rounded-full bg-surface-card soft-shadow flex items-center justify-center text-primary hover:scale-105 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">star</span>
+      </button>
+      <button onclick="swipeCard('right')" class="w-16 h-16 rounded-full bg-surface-card soft-shadow flex items-center justify-center text-tertiary hover:scale-105 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+      </button>
+    </div>
+  </section>
+</main>
+<div id="matchPopup" class="hidden fixed inset-0 z-[60] items-center justify-center bg-on-surface/40 backdrop-blur-sm px-margin-mobile">
+    <div class="bg-surface-card rounded-lg p-8 text-center flex flex-col items-center gap-4 max-w-xs fade-in">
+      <span class="material-symbols-outlined text-tertiary text-5xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+      <h3 class="font-headline-md text-on-surface">It's a match!</h3>
+      <p class="font-body-md text-text-muted text-sm">You and <span id="matchName">Aria</span> are both headed the same way. Say hi and start planning together.</p>
+      <button onclick="closeMatch()" class="w-full py-3 rounded-full bg-gradient-to-r from-gradient-start to-gradient-end text-white font-label-md turquoise-glow">Send a message</button>
+      <button onclick="closeMatch()" class="font-label-md text-text-muted">Keep swiping</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: AI PLANNER ============ -->
+  <section id="view-planner" class="view flex-col px-margin-mobile py-6 flex-1">
+    <div class="flex flex-col items-center text-center mb-6">
+      <div class="w-16 h-16 rounded-full bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center turquoise-glow mb-4">
+        <span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+      </div>
+      <h2 class="font-headline-lg-mobile text-on-surface">AI trip planner</h2>
+      <p class="font-body-md text-text-muted mt-2 max-w-md">Your intelligent concierge. Ask me anything to curate your perfect journey.</p>
+    </div>
+
+    <div id="chatLog" class="flex-1 overflow-y-auto rounded-xl bg-surface-card soft-shadow p-4 flex flex-col gap-6 mb-4 min-h-[320px] max-h-[52vh]">
+      <div class="flex items-start gap-3 max-w-[90%]">
+        <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+        </div>
+        <div class="bg-surface-container-low text-on-surface rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed">
+          Hello! I'm Ferene, your premium AI travel assistant. How can I help you discover your next adventure today?
+        </div>
+      </div>
+    </div>
+<nav class="bg-surface/80 backdrop-blur-xl border-t border-white/15 shadow-[0_-4px_40px_rgba(7,28,54,0.06)] fixed bottom-0 w-full z-40 flex justify-around items-center h-20 px-4">
+  <a href="index.html" class="nav-item flex flex-col items-center justify-center w-full h-full transition-colors active:scale-90 text-primary">
+    <span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
+    <span class="font-label-sm text-label-sm font-bold">Match</span>
+  </a>
+  <a href="planner.html" class="nav-item flex flex-col items-center justify-center w-full h-full transition-colors active:scale-90 text-on-secondary-fixed-variant">
+    <span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">auto_awesome</span>
+    <span class="font-label-sm text-label-sm ">AI planner</span>
+  </a>
+  <a href="gems.html" class="nav-item flex flex-col items-center justify-center w-full h-full transition-colors active:scale-90 text-on-secondary-fixed-variant">
+    <span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">diamond</span>
+    <span class="font-label-sm text-label-sm ">Hidden gems</span>
+  </a>
+</nav>
+<script src="swipe.js" defer></script>
+</body>
+</html>

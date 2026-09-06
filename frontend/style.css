@@ -1,0 +1,80 @@
+body {
+  min-height: max(884px, 100dvh);
+  font-family: 'Montserrat', sans-serif;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.soft-shadow {
+  box-shadow: 0 8px 40px rgba(7, 28, 54, 0.06);
+}
+
+.turquoise-glow {
+  box-shadow: 0 4px 20px rgba(20, 184, 166, 0.2);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 10px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: flex;
+}
+
+.card-stack {
+  position: relative;
+}
+
+.swipe-card {
+  transition: transform 0.35s cubic-bezier(.2, .9, .3, 1), opacity 0.3s;
+}
+
+.swipe-card.leaving-right {
+  transform: translateX(140%) rotate(18deg);
+  opacity: 0;
+}
+
+.swipe-card.leaving-left {
+  transform: translateX(-140%) rotate(-18deg);
+  opacity: 0;
+}
+
+.fade-in {
+  animation: fadeIn .4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+input:focus {
+  outline: none;
+}

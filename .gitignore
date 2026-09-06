@@ -1,0 +1,16 @@
+.DS_Store
+
+# Node
+node_modules/
+dist/
+
+# Python
+_pycache_/
+*.pyc
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.*
+!.env.example
