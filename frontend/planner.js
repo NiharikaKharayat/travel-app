@@ -1,151 +1,65 @@
-// ==========================================
-// EXTRACT TRAVEL PREFERENCES
-// ==========================================
-
-function extractTravelPreferences(text) {
-
-    const message = text.toLowerCase();
+const CHAT_API_URL = "http://127.0.0.1:8000/chat";
 
 
-    const preferences = {
+function extractDestination(message) {
 
-        crowdPreference: "Low",
+    const destinations = [
 
-        budget: null,
+        "Dehradun",
+        "Rishikesh",
+        "Mussoorie",
+        "Pauri",
+        "Srinagar",
+        "Kotdwar",
+        "Rudraprayag",
+        "Kedarnath",
+        "Gopeshwar",
+        "Joshimath",
+        "Badrinath",
+        "Auli",
+        "Hemkund Sahib",
+        "Valley of Flowers",
+        "Tehri",
+        "Uttarkashi",
+        "Gangotri",
+        "Yamunotri",
+        "Haridwar",
+        "Almora",
+        "Ranikhet",
+        "Kausani",
+        "Bageshwar",
+        "Pithoragarh",
+        "Champawat",
+        "Nainital",
+        "Kathgodam",
+        "Corbett",
+        "Udham Singh Nagar"
 
-        duration: null,
-
-        interest: null
-
-    };
-
-
-    // ==========================================
-    // CROWD PREFERENCE
-    // ==========================================
-
-    if (
-
-        message.includes("crowded") &&
-        !message.includes("less crowded")
-
-    ) {
-
-        preferences.crowdPreference = "High";
-
-    }
-
-
-    if (
-
-        message.includes("medium crowd") ||
-        message.includes("moderate crowd")
-
-    ) {
-
-        preferences.crowdPreference = "Medium";
-
-    }
+    ];
 
 
-    if (
+    const lowerMessage = message.toLowerCase();
 
-        message.includes("less crowded") ||
-        message.includes("low crowd") ||
-        message.includes("peaceful") ||
-        message.includes("quiet") ||
-        message.includes("hidden") ||
-        message.includes("hidden places") ||
-        message.includes("offbeat")
 
-    ) {
+    for (const destination of destinations) {
 
-        preferences.crowdPreference = "Low";
+        if (
+            lowerMessage.includes(
+                destination.toLowerCase()
+            )
+        ) {
+
+            return destination;
+
+        }
 
     }
 
 
-    // ==========================================
-    // BUDGET
-    // ==========================================
-
-    if (
-
-        message.includes("budget") ||
-        message.includes("cheap") ||
-        message.includes("affordable")
-
-    ) {
-
-        preferences.budget = "Budget";
-
-    }
-
-
-    // ==========================================
-    // DURATION
-    // ==========================================
-
-    const daysMatch =
-        message.match(/(\d+)[-\s]?day/);
-
-
-    if (daysMatch) {
-
-        preferences.duration =
-            parseInt(daysMatch[1]);
-
-    }
-
-
-    // ==========================================
-    // INTEREST
-    // ==========================================
-
-    if (
-
-        message.includes("nature") ||
-        message.includes("mountain")
-
-    ) {
-
-        preferences.interest = "Nature";
-
-    }
-
-
-    if (
-
-        message.includes("adventure") ||
-        message.includes("trek")
-
-    ) {
-
-        preferences.interest = "Adventure";
-
-    }
-
-
-    if (
-
-        message.includes("spiritual") ||
-        message.includes("temple")
-
-    ) {
-
-        preferences.interest = "Spiritual";
-
-    }
-
-
-    return preferences;
+    return null;
 
 }
 
-
-// ==========================================
-// SEND PROMPT
-// ==========================================
 
 function sendPrompt(preset) {
 
@@ -161,38 +75,13 @@ function sendPrompt(preset) {
     if (!text) return;
 
 
-    const preferences =
-        extractTravelPreferences(text);
-
-
-    // ==========================================
-    // SAVE TO LOCAL STORAGE
-    // ==========================================
-
-    localStorage.setItem(
-
-        "fereneTravelPreferences",
-
-        JSON.stringify(preferences)
-
-    );
-
-
-    // DEBUG
-
-    console.log(
-        "FERENE SAVED PREFERENCES:",
-        preferences
-    );
-
-
-    // ==========================================
-    // USER MESSAGE
-    // ==========================================
-
     const log =
         document.getElementById("chatLog");
 
+
+    // ==========================================
+    // SHOW USER MESSAGE
+    // ==========================================
 
     log.insertAdjacentHTML(
 
@@ -223,10 +112,127 @@ function sendPrompt(preset) {
 
 
     // ==========================================
+    // EXTRACT DESTINATION
+    // ==========================================
+
+    const destination =
+        extractDestination(text);
+
+
+    // ==========================================
+    // SAVE TRIP DESTINATION
+    // ==========================================
+
+    if (destination) {
+
+        localStorage.setItem(
+
+            "selectedDestination",
+
+            destination
+
+        );
+
+
+        console.log(
+
+            "Trip destination saved:",
+
+            destination
+
+        );
+
+    }
+
+
+    // ==========================================
+    // SHOW AI THINKING
+    // ==========================================
+
+    const loadingId =
+        "loading-" + Date.now();
+
+
+    log.insertAdjacentHTML(
+
+        "beforeend",
+
+        `
+
+        <div id="${loadingId}" class="flex items-start gap-3 max-w-[95%]">
+
+            <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
+
+                <span class="material-symbols-outlined text-primary text-sm">
+
+                    auto_awesome
+
+                </span>
+
+            </div>
+
+
+            <div class="bg-surface-container-low text-on-surface rounded-2xl rounded-tl-sm p-4 text-sm">
+
+                Planning your trip...
+
+            </div>
+
+        </div>
+
+        `
+
+    );
+
+
+    log.scrollTop =
+        log.scrollHeight;
+
+
+    // ==========================================
     // AI RESPONSE
     // ==========================================
 
     setTimeout(() => {
+
+
+        const loadingElement =
+            document.getElementById(loadingId);
+
+
+        if (loadingElement) {
+
+            loadingElement.remove();
+
+        }
+
+
+        let responseMessage;
+
+
+        if (destination) {
+
+            responseMessage = `
+
+            Great choice! I've started planning your trip to <b>${destination}</b>.
+
+            I'll also help you discover nearby destinations with lower tourism pressure.
+
+            `;
+
+        }
+
+        else {
+
+            responseMessage = `
+
+            I can help plan your Uttarakhand trip.
+
+            Try mentioning a destination such as Rishikesh, Nainital, Mussoorie, Auli or Kedarnath.
+
+            `;
+
+        }
 
 
         log.insertAdjacentHTML(
@@ -236,6 +242,7 @@ function sendPrompt(preset) {
             `
 
             <div class="flex items-start gap-3 max-w-[95%] fade-in">
+
 
                 <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
 
@@ -250,36 +257,44 @@ function sendPrompt(preset) {
 
                 <div class="w-full">
 
+
                     <div class="bg-surface-container-low text-on-surface rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed">
 
 
-                        <p class="mb-3">
+                        <p class="mb-4">
 
-                            Based on your preferences, I've curated destinations with ${preferences.crowdPreference.toLowerCase()} tourism pressure.
+                            ${responseMessage}
 
                         </p>
 
 
+                        ${destination ? `
+
                         <button
-                        onclick="location.href='gems.html'"
-                        class="w-full bg-surface-card rounded-lg p-3 border border-outline-variant/30 flex items-center justify-between"
+
+                            onclick="goToHiddenGems()"
+
+                            class="w-full bg-surface-card rounded-lg p-3 border border-outline-variant/30 flex items-center justify-between hover:border-primary/50 transition-colors"
+
                         >
 
 
                             <div class="text-left">
 
+
                                 <p class="font-label-md text-on-surface">
 
-                                    View Personalized Hidden Gems
+                                    Discover Hidden Gems
 
                                 </p>
 
 
                                 <p class="text-text-muted text-xs">
 
-                                    Based on your travel preferences
+                                    Low crowd + nearby destinations
 
                                 </p>
+
 
                             </div>
 
@@ -293,10 +308,14 @@ function sendPrompt(preset) {
 
                         </button>
 
+                        ` : ""}
+
 
                     </div>
 
+
                 </div>
+
 
             </div>
 
@@ -309,15 +328,19 @@ function sendPrompt(preset) {
             log.scrollHeight;
 
 
-    }, 500);
+    }, 700);
 
 
 }
 
 
-// ==========================================
-// ENTER KEY
-// ==========================================
+function goToHiddenGems() {
+
+    window.location.href =
+        "gems.html";
+
+}
+
 
 document
     .getElementById("chatInput")
