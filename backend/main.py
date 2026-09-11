@@ -2,7 +2,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socketio
 import math
+import os
+from dotenv import load_dotenv
+from google import genai
 
+# =================================================
+# GEMINI CONFIGURATION
+# =================================================
+
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY is missing from .env")
+
+gemini_client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
 
 # =================================================
 # SOCKET.IO CONFIGURATION
@@ -182,6 +199,61 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
     return radius * c
 
+# =================================================
+# GEMINI CHAT API
+# =================================================
+
+@fastapi_app.post("/chat")
+async def chat_with_gemini(data: dict):
+
+    user_message = data.get("message", "").strip()
+
+    if not user_message:
+        return {
+            "status": "error",
+            "message": "Message is required"
+        }
+
+    try:
+
+        prompt = f"""
+You are Ferene, a premium AI travel assistant.
+
+Your job is to help users plan trips, discover destinations,
+create itineraries, estimate budgets, and give practical travel advice.
+
+Rules:
+- Be helpful and conversational.
+- Give detailed but easy-to-read answers.
+- Use simple headings.
+- Use numbered lists when useful.
+- Do not mention that you are an API or backend.
+- Do not invent bookings or reservations.
+- If the user asks for an itinerary, organize it day by day.
+- Consider the user's budget, duration and destination when provided.
+
+User request:
+{user_message}
+"""
+
+        response = gemini_client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt
+        )
+
+        return {
+            "status": "success",
+            "response": response.text
+        }
+
+    except Exception as e:
+
+        print("Gemini Error:", e)
+
+        return {
+            "status": "error",
+            "message": "Unable to get response from Gemini"
+        }
 
 # =================================================
 # API HOME
