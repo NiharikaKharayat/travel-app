@@ -1,5 +1,124 @@
-const CHAT_API_URL = "http://127.0.0.1:8000/chat";
+// ==========================================
+// FERENE AI PLANNER
+// GEMINI API CONFIGURATION
+// ==========================================
 
+
+// ==========================================
+// MARKDOWN → HTML FORMATTER
+// ==========================================
+
+function formatGeminiResponse(text) {
+
+    if (!text) {
+        return "";
+    }
+
+    let html = text;
+
+
+    // ==========================================
+    // REMOVE MARKDOWN HEADINGS
+    // ### Heading → Heading
+    // ==========================================
+
+    html = html.replace(
+        /^###\s*(.*)$/gm,
+        "<div class='font-bold text-base mt-4 mb-2'>$1</div>"
+    );
+
+    html = html.replace(
+        /^##\s*(.*)$/gm,
+        "<div class='font-bold text-lg mt-4 mb-2'>$1</div>"
+    );
+
+    html = html.replace(
+        /^#\s*(.*)$/gm,
+        "<div class='font-bold text-xl mt-4 mb-2'>$1</div>"
+    );
+
+
+    // ==========================================
+    // BOLD
+    // **Travel** → Travel
+    // ==========================================
+
+    html = html.replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+    );
+
+
+    // ==========================================
+    // BULLET POINTS
+    // * Travel → • Travel
+    // ==========================================
+
+    html = html.replace(
+        /^\s*\*\s+/gm,
+        "• "
+    );
+
+    html = html.replace(
+        /^\s*-\s+/gm,
+        "• "
+    );
+
+
+    // ==========================================
+    // REMOVE HORIZONTAL LINES
+    // --- → nothing
+    // ==========================================
+
+    html = html.replace(
+        /^\s*---+\s*$/gm,
+        ""
+    );
+
+
+    // ==========================================
+    // NUMBERED LIST
+    // Keep 1. 2. 3.
+    // ==========================================
+
+    html = html.replace(
+        /^\s*(\d+)\.\s+/gm,
+        "$1. "
+    );
+
+
+    // ==========================================
+    // CLEAN EXTRA SPACES
+    // ==========================================
+
+    html = html.replace(
+        /\n{3,}/g,
+        "\n\n"
+    );
+
+
+    // ==========================================
+    // LINE BREAKS
+    // ==========================================
+
+    html = html.replace(
+        /\n\n/g,
+        "<br><br>"
+    );
+
+    html = html.replace(
+        /\n/g,
+        "<br>"
+    );
+
+
+    return html;
+}
+
+
+// ==========================================
+// DESTINATION EXTRACTION
+// ==========================================
 
 function extractDestination(message) {
 
@@ -38,7 +157,8 @@ function extractDestination(message) {
     ];
 
 
-    const lowerMessage = message.toLowerCase();
+    const lowerMessage =
+        message.toLowerCase();
 
 
     for (const destination of destinations) {
@@ -57,12 +177,14 @@ function extractDestination(message) {
 
 
     return null;
-
 }
 
 
-function sendPrompt(preset) {
+// ==========================================
+// SEND PROMPT
+// ==========================================
 
+async function sendPrompt(preset) {
 
     const input =
         document.getElementById("chatInput");
@@ -72,7 +194,9 @@ function sendPrompt(preset) {
         preset || input.value.trim();
 
 
-    if (!text) return;
+    if (!text) {
+        return;
+    }
 
 
     const log =
@@ -88,7 +212,6 @@ function sendPrompt(preset) {
         "beforeend",
 
         `
-
         <div class="flex items-start gap-3 max-w-[85%] self-end flex-row-reverse ml-auto fade-in">
 
             <div class="bg-tertiary-container/10 text-on-surface border border-tertiary-container/30 rounded-2xl rounded-tr-sm p-4 text-sm">
@@ -98,7 +221,6 @@ function sendPrompt(preset) {
             </div>
 
         </div>
-
         `
 
     );
@@ -120,26 +242,20 @@ function sendPrompt(preset) {
 
 
     // ==========================================
-    // SAVE TRIP DESTINATION
+    // SAVE DESTINATION
     // ==========================================
 
     if (destination) {
 
         localStorage.setItem(
-
             "selectedDestination",
-
             destination
-
         );
 
 
         console.log(
-
             "Trip destination saved:",
-
             destination
-
         );
 
     }
@@ -158,15 +274,12 @@ function sendPrompt(preset) {
         "beforeend",
 
         `
-
         <div id="${loadingId}" class="flex items-start gap-3 max-w-[95%]">
 
             <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
 
                 <span class="material-symbols-outlined text-primary text-sm">
-
                     auto_awesome
-
                 </span>
 
             </div>
@@ -179,7 +292,6 @@ function sendPrompt(preset) {
             </div>
 
         </div>
-
         `
 
     );
@@ -190,14 +302,103 @@ function sendPrompt(preset) {
 
 
     // ==========================================
-    // AI RESPONSE
+    // GEMINI AI RESPONSE
+    // THROUGH FASTAPI BACKEND
     // ==========================================
 
-    setTimeout(() => {
+    try {
 
+        console.log(
+            "Sending request to Gemini..."
+        );
+
+
+        // ==========================================
+        // SEND REQUEST TO BACKEND
+        // ==========================================
+
+        const response = await fetch(
+
+            "http://127.0.0.1:8000/chat",
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body: JSON.stringify({
+
+                    message: text
+
+                })
+
+            }
+
+        );
+
+
+        // ==========================================
+        // READ BACKEND RESPONSE
+        // ==========================================
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Backend response:",
+            data
+        );
+
+
+        // ==========================================
+        // CHECK BACKEND ERROR
+        // ==========================================
+
+        if (
+            !response.ok ||
+            data.status !== "success"
+        ) {
+
+            throw new Error(
+
+                data.message ||
+                "Backend chat request failed"
+
+            );
+
+        }
+
+
+        // ==========================================
+        // GET GEMINI TEXT
+        // ==========================================
+
+        const responseMessage =
+            data.response ||
+            "Sorry, I couldn't generate a response.";
+
+
+        console.log(
+            "Gemini message:",
+            responseMessage
+        );
+
+
+        // ==========================================
+        // REMOVE LOADING
+        // ==========================================
 
         const loadingElement =
-            document.getElementById(loadingId);
+            document.getElementById(
+                loadingId
+            );
 
 
         if (loadingElement) {
@@ -207,49 +408,31 @@ function sendPrompt(preset) {
         }
 
 
-        let responseMessage;
+        // ==========================================
+        // FORMAT GEMINI RESPONSE
+        // ==========================================
+
+        const formattedResponse =
+            formatGeminiResponse(
+                responseMessage
+            );
 
 
-        if (destination) {
-
-            responseMessage = `
-
-            Great choice! I've started planning your trip to <b>${destination}</b>.
-
-            I'll also help you discover nearby destinations with lower tourism pressure.
-
-            `;
-
-        }
-
-        else {
-
-            responseMessage = `
-
-            I can help plan your Uttarakhand trip.
-
-            Try mentioning a destination such as Rishikesh, Nainital, Mussoorie, Auli or Kedarnath.
-
-            `;
-
-        }
-
+        // ==========================================
+        // SHOW GEMINI RESPONSE
+        // ==========================================
 
         log.insertAdjacentHTML(
 
             "beforeend",
 
             `
-
             <div class="flex items-start gap-3 max-w-[95%] fade-in">
-
 
                 <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
 
                     <span class="material-symbols-outlined text-primary text-sm">
-
                         auto_awesome
-
                     </span>
 
                 </div>
@@ -257,68 +440,15 @@ function sendPrompt(preset) {
 
                 <div class="w-full">
 
-
                     <div class="bg-surface-container-low text-on-surface rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed">
 
-
-                        <p class="mb-4">
-
-                            ${responseMessage}
-
-                        </p>
-
-
-                        ${destination ? `
-
-                        <button
-
-                            onclick="goToHiddenGems()"
-
-                            class="w-full bg-surface-card rounded-lg p-3 border border-outline-variant/30 flex items-center justify-between hover:border-primary/50 transition-colors"
-
-                        >
-
-
-                            <div class="text-left">
-
-
-                                <p class="font-label-md text-on-surface">
-
-                                    Discover Hidden Gems
-
-                                </p>
-
-
-                                <p class="text-text-muted text-xs">
-
-                                    Low crowd + nearby destinations
-
-                                </p>
-
-
-                            </div>
-
-
-                            <span class="material-symbols-outlined text-primary">
-
-                                chevron_right
-
-                            </span>
-
-
-                        </button>
-
-                        ` : ""}
-
+                        ${formattedResponse}
 
                     </div>
 
-
                 </div>
 
-
             </div>
-
             `
 
         );
@@ -328,11 +458,81 @@ function sendPrompt(preset) {
             log.scrollHeight;
 
 
-    }, 700);
+    }
 
+
+    // ==========================================
+    // ERROR HANDLING
+    // ==========================================
+
+    catch (error) {
+
+        console.error(
+            "Gemini API Error:",
+            error
+        );
+
+
+        // ==========================================
+        // REMOVE LOADING
+        // ==========================================
+
+        const loadingElement =
+            document.getElementById(
+                loadingId
+            );
+
+
+        if (loadingElement) {
+
+            loadingElement.remove();
+
+        }
+
+
+        // ==========================================
+        // SHOW ERROR
+        // ==========================================
+
+        log.insertAdjacentHTML(
+
+            "beforeend",
+
+            `
+            <div class="flex items-start gap-3 max-w-[95%] fade-in">
+
+                <div class="w-8 h-8 rounded-full bg-surface-container flex-shrink-0 flex items-center justify-center">
+
+                    <span class="material-symbols-outlined text-primary text-sm">
+                        error
+                    </span>
+
+                </div>
+
+
+                <div class="bg-surface-container-low text-on-surface rounded-2xl p-4 text-sm">
+
+                    Sorry, I couldn't connect to Gemini right now.
+
+                </div>
+
+            </div>
+            `
+
+        );
+
+
+        log.scrollTop =
+            log.scrollHeight;
+
+    }
 
 }
 
+
+// ==========================================
+// GO TO HIDDEN GEMS
+// ==========================================
 
 function goToHiddenGems() {
 
@@ -342,15 +542,25 @@ function goToHiddenGems() {
 }
 
 
-document
-    .getElementById("chatInput")
-    .addEventListener(
+// ==========================================
+// ENTER KEY
+// ==========================================
+
+const chatInput =
+    document.getElementById("chatInput");
+
+
+if (chatInput) {
+
+    chatInput.addEventListener(
 
         "keydown",
 
         function(event) {
 
             if (event.key === "Enter") {
+
+                event.preventDefault();
 
                 sendPrompt();
 
@@ -359,3 +569,5 @@ document
         }
 
     );
+
+}
