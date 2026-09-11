@@ -1,13 +1,11 @@
-const API_URL =
-    "http://127.0.0.1:8000/recommendations";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 
 // ==========================================
-// LOAD RECOMMENDATIONS
+// LOAD HIDDEN GEMS
 // ==========================================
 
-async function loadRecommendations() {
-
+function loadRecommendations() {
 
     const gemsList =
         document.getElementById("gemsList");
@@ -15,150 +13,165 @@ async function loadRecommendations() {
 
     gemsList.innerHTML = `
 
-        <div class="text-center text-text-muted">
+        <div class="text-center text-text-muted py-8">
 
-            Loading personalized recommendations...
+            Finding hidden gems near you...
 
         </div>
 
     `;
 
 
-    try {
+    // Check browser geolocation
 
+    if (!navigator.geolocation) {
 
-        // ==========================================
-        // READ LOCAL STORAGE
-        // ==========================================
+        // Default location if geolocation unavailable
 
-        const savedPreferences =
-            localStorage.getItem(
-                "fereneTravelPreferences"
-            );
-
-
-        console.log(
-            "RAW LOCAL STORAGE:",
-            savedPreferences
+        fetchRecommendations(
+            28.6139,
+            77.2090
         );
 
+        return;
 
-        let crowdLevel = "Low";
-
-
-        // ==========================================
-        // GET CROWD LEVEL
-        // ==========================================
-
-        if (savedPreferences) {
+    }
 
 
-            const preferences =
-                JSON.parse(savedPreferences);
+    navigator.geolocation.getCurrentPosition(
+
+        function(position) {
+
+            const latitude =
+                position.coords.latitude;
+
+
+            const longitude =
+                position.coords.longitude;
 
 
             console.log(
-                "PARSED PREFERENCES:",
-                preferences
+                "User Location:",
+                latitude,
+                longitude
             );
 
 
-            if (preferences.crowdPreference) {
+            fetchRecommendations(
+                latitude,
+                longitude
+            );
 
-                crowdLevel =
-                    preferences.crowdPreference;
+        },
 
-            }
+
+        function(error) {
+
+            console.warn(
+                "Location unavailable. Using Delhi as default location."
+            );
+
+
+            // Default Delhi location
+
+            fetchRecommendations(
+                28.6139,
+                77.2090
+            );
+
+        },
+
+
+        {
+
+            enableHighAccuracy: true,
+
+            timeout: 10000,
+
+            maximumAge: 60000
 
         }
 
+    );
+
+}
+
+
+// ==========================================
+// FETCH RECOMMENDATIONS
+// ==========================================
+
+async function fetchRecommendations(
+    latitude,
+    longitude
+) {
+
+    const gemsList =
+        document.getElementById("gemsList");
+
+
+    try {
+
+        const url =
+
+            `${API_BASE_URL}/recommendations/nearby?latitude=${latitude}&longitude=${longitude}&limit=10`;
+
 
         console.log(
-            "FINAL CROWD LEVEL:",
-            crowdLevel
+            "Fetching:",
+            url
         );
 
-
-        // ==========================================
-        // CREATE API URL
-        // ==========================================
-
-        const requestURL =
-            `${API_URL}?crowd_level=${encodeURIComponent(crowdLevel)}`;
-
-
-        console.log(
-            "REQUEST URL:",
-            requestURL
-        );
-
-
-        // ==========================================
-        // FETCH BACKEND
-        // ==========================================
 
         const response =
-            await fetch(requestURL);
+            await fetch(url);
 
 
         if (!response.ok) {
 
             throw new Error(
-                `Backend error: ${response.status}`
+                `Server returned ${response.status}`
             );
 
         }
 
 
-        const places =
+        const data =
             await response.json();
 
 
         console.log(
-            "FILTERED BACKEND DATA:",
-            places
+            "API Response:",
+            data
         );
 
 
-        // ==========================================
-        // CLEAR LOADING
-        // ==========================================
+        // IMPORTANT:
+        // Backend returns:
+        // {
+        //   status,
+        //   count,
+        //   recommendations: []
+        // }
+
+        const places =
+            data.recommendations || [];
+
+
+        // Clear loading
 
         gemsList.innerHTML = "";
 
 
-        // ==========================================
-        // BACKEND ERROR
-        // ==========================================
-
-        if (places.error) {
-
-            gemsList.innerHTML = `
-
-                <div class="p-4 rounded-xl bg-red-50 text-red-600">
-
-                    ${places.error}
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        // ==========================================
-        // NO RESULTS
-        // ==========================================
+        // No results
 
         if (places.length === 0) {
 
             gemsList.innerHTML = `
 
-                <div class="p-5 rounded-xl bg-surface-container-low text-center">
+                <div class="text-center text-text-muted py-8">
 
-                    No destinations found matching your preferences.
+                    No hidden gems found.
 
                 </div>
 
@@ -169,178 +182,230 @@ async function loadRecommendations() {
         }
 
 
-        // ==========================================
-        // DISPLAY DESTINATIONS
-        // ==========================================
+        // ======================================
+        // DISPLAY RECOMMENDATIONS
+        // ======================================
 
         places.forEach(place => {
 
 
-            let badgeColor;
+            // Tourism pressure
+
+            const pressure =
+                place.tourism_pressure ?? 0;
 
 
-            if (place.pressure_level === "Low") {
+            // Pressure level
 
-                badgeColor =
-                    "bg-green-100 text-green-700";
+            let pressureLevel =
+                "Low";
 
-            }
 
-            else if (place.pressure_level === "Medium") {
+            let badgeColor =
+                "bg-green-100 text-green-700";
 
-                badgeColor =
-                    "bg-yellow-100 text-yellow-700";
 
-            }
+            if (pressure > 60) {
 
-            else {
+                pressureLevel = "High";
 
                 badgeColor =
                     "bg-red-100 text-red-700";
 
             }
 
+            else if (pressure > 35) {
+
+                pressureLevel = "Medium";
+
+                badgeColor =
+                    "bg-yellow-100 text-yellow-700";
+
+            }
+
+
+            // Create card
 
             const card =
                 document.createElement("div");
 
 
-            card.className = `
-                bg-surface-container-low
-                rounded-2xl
-                p-5
-                border
-                border-white/20
-                shadow-sm
-            `;
+            card.className =
+
+                "bg-surface-container-low rounded-2xl overflow-hidden border border-white/20 shadow-sm";
 
 
             card.innerHTML = `
 
-                <div class="flex justify-between items-start">
+
+                <!-- IMAGE -->
+
+                <img
+                    src="${place.image}"
+                    alt="${place.name}"
+                    class="w-full h-48 object-cover"
+                    onerror="this.style.display='none'"
+                >
 
 
-                    <div>
-
-                        <h3 class="text-lg font-bold text-on-surface">
-
-                            ${place.destination}
-
-                        </h3>
+                <div class="p-5">
 
 
-                        <p class="text-sm text-text-muted mt-1">
+                    <!-- HEADER -->
 
-                            Uttarakhand, India
-
-                        </p>
+                    <div class="flex justify-between items-start gap-3">
 
 
-                    </div>
+                        <div>
 
 
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeColor}">
+                            <h3 class="text-lg font-bold text-on-surface">
 
-                        ${place.pressure_level} Pressure
+                                ${place.name}
 
-                    </span>
-
-
-                </div>
+                            </h3>
 
 
-                <!-- PRESSURE SCORE -->
+                            <p class="text-sm text-text-muted mt-1">
 
-                <div class="mt-5">
+                                📍 ${place.location}
 
+                            </p>
 
-                    <div class="flex justify-between text-sm mb-2">
-
-                        <span class="text-text-muted">
-
-                            Tourism Pressure
-
-                        </span>
-
-
-                        <span class="font-semibold">
-
-                            ${place.pressure_score}/100
-
-                        </span>
-
-
-                    </div>
-
-
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-
-                        <div
-                        class="bg-gradient-to-r from-gradient-start to-gradient-end h-2 rounded-full"
-                        style="width: ${place.pressure_score}%"
-                        >
 
                         </div>
 
+
+                        <span
+                            class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${badgeColor}"
+                        >
+
+                            ${pressureLevel} Pressure
+
+                        </span>
+
+
+                    </div>
+
+
+
+                    <!-- DESCRIPTION -->
+
+                    <p class="text-sm text-text-muted mt-4">
+
+                        ${place.description}
+
+                    </p>
+
+
+
+                    <!-- CATEGORY + DISTANCE -->
+
+                    <div class="grid grid-cols-2 gap-4 mt-5">
+
+
+                        <div>
+
+
+                            <p class="text-xs text-text-muted">
+
+                                Category
+
+                            </p>
+
+
+                            <p class="font-semibold mt-1">
+
+                                ${place.category}
+
+                            </p>
+
+
+                        </div>
+
+
+
+                        <div class="text-right">
+
+
+                            <p class="text-xs text-text-muted">
+
+                                Distance
+
+                            </p>
+
+
+                            <p class="font-semibold text-primary mt-1">
+
+                                ${place.distance} km
+
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- TOURISM PRESSURE -->
+
+                    <div class="mt-5">
+
+
+                        <div class="flex justify-between text-sm mb-2">
+
+
+                            <span class="text-text-muted">
+
+                                Tourism Pressure
+
+                            </span>
+
+
+                            <span class="font-semibold">
+
+                                ${pressure}/100
+
+                            </span>
+
+
+                        </div>
+
+
+
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+
+
+                            <div
+                                class="bg-gradient-to-r from-gradient-start to-gradient-end h-2 rounded-full"
+                                style="width: ${pressure}%"
+                            >
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- RECOMMENDATION -->
+
+                    <div
+                        class="mt-5 text-sm text-text-muted bg-white/40 rounded-xl p-3"
+                    >
+
+                        ✓ Recommended based on lower tourism pressure and distance from your location.
+
                     </div>
 
 
                 </div>
 
-
-                <!-- STATS -->
-
-                <div class="grid grid-cols-2 gap-4 mt-5">
-
-
-                    <div class="bg-white/40 rounded-xl p-3">
-
-                        <p class="text-xs text-text-muted">
-
-                            Avg. Tourists
-
-                        </p>
-
-
-                        <p class="font-semibold mt-1">
-
-                            ${Number(
-                                place.average_tourists
-                            ).toLocaleString()}
-
-                        </p>
-
-                    </div>
-
-
-                    <div class="bg-white/40 rounded-xl p-3">
-
-                        <p class="text-xs text-text-muted">
-
-                            Crowd Level
-
-                        </p>
-
-
-                        <p class="font-semibold mt-1">
-
-                            ${place.crowd_level || "N/A"}
-
-                        </p>
-
-                    </div>
-
-
-                </div>
-
-
-                <div class="mt-4 text-sm text-text-muted">
-
-                    ${getRecommendationMessage(
-                        place.pressure_level
-                    )}
-
-                </div>
 
             `;
 
@@ -358,20 +423,39 @@ async function loadRecommendations() {
 
 
         console.error(
-            "FERENE ERROR:",
+            "API Error:",
             error
         );
 
 
         gemsList.innerHTML = `
 
-            <div class="p-5 rounded-xl bg-red-50 text-red-600 text-center">
+            <div class="p-5 rounded-2xl bg-red-50 text-red-600 text-center">
 
-                Unable to load tourism recommendations.
 
-                <br><br>
+                <h3 class="font-bold text-lg">
 
-                ${error.message}
+                    Unable to load hidden gems
+
+                </h3>
+
+
+                <p class="text-sm mt-2">
+
+                    ${error.message}
+
+                </p>
+
+
+                <button
+                    onclick="loadRecommendations()"
+                    class="mt-4 px-5 py-2 rounded-full bg-red-500 text-white"
+                >
+
+                    Try Again
+
+                </button>
+
 
             </div>
 
@@ -383,27 +467,12 @@ async function loadRecommendations() {
 
 
 // ==========================================
-// RECOMMENDATION MESSAGE
+// REFRESH BUTTON
 // ==========================================
 
-function getRecommendationMessage(level) {
+function refreshRecommendations() {
 
-
-    if (level === "Low") {
-
-        return "✓ Recommended for a peaceful and less crowded travel experience.";
-
-    }
-
-
-    if (level === "Medium") {
-
-        return "• Moderate tourism activity expected.";
-
-    }
-
-
-    return "⚠ High tourism pressure. Consider visiting during off-peak periods.";
+    loadRecommendations();
 
 }
 
@@ -413,6 +482,9 @@ function getRecommendationMessage(level) {
 // ==========================================
 
 document.addEventListener(
+
     "DOMContentLoaded",
+
     loadRecommendations
+
 );
