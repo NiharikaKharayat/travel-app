@@ -306,7 +306,6 @@ function showStatus(message, isError) {
 
 }
 
-
 // ============================================================
 // EMERGENCY SOS SYSTEM
 // ============================================================
@@ -1110,5 +1109,12 @@ function formatDateTime(date) {
             timeStyle: 'short'
         }
     );
+  return date.toLocaleString(
+    [],
+    {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }
+  );
 
 }
