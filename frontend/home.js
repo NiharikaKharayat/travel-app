@@ -264,14 +264,14 @@ function useMyLocation() {
     const statusEl =
         document.getElementById('locationStatus');
 
-    const destinationInput =
-        document.getElementById('destinationInput');
+    const fromLocationInput =
+        document.getElementById('fromLocation');
 
     const btn =
         document.getElementById('useLocationBtn');
 
 
-    if (!destinationInput) {
+    if (!fromLocationInput) {
 
         return;
 
@@ -352,7 +352,7 @@ function useMyLocation() {
 
                 if (place) {
 
-                    destinationInput.value =
+                    fromLocationInput.value =
                         place;
 
 
@@ -379,7 +379,7 @@ function useMyLocation() {
                 );
 
 
-                destinationInput.value =
+                fromLocationInput.value =
                     `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
             } finally {
@@ -419,7 +419,7 @@ function useMyLocation() {
             ) {
 
                 showStatus(
-                    'Location permission denied. Enter your destination manually.',
+                    'Location permission denied. Enter your starting location manually.',
                     true
                 );
 
