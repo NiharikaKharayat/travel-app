@@ -5,7 +5,15 @@
 
 
 // ==========================================
-// MARKDOWN → HTML FORMATTER
+// CONVERSATION HISTORY
+// (sent to backend so Gemini remembers context)
+// ==========================================
+
+let conversationHistory = [];
+
+
+// ==========================================
+// MARKDOWN TO HTML FORMATTER
 // ==========================================
 
 function formatGeminiResponse(text) {
@@ -19,7 +27,7 @@ function formatGeminiResponse(text) {
 
     // ==========================================
     // REMOVE MARKDOWN HEADINGS
-    // ### Heading → Heading
+    // ### Heading -> Heading
     // ==========================================
 
     html = html.replace(
@@ -40,7 +48,7 @@ function formatGeminiResponse(text) {
 
     // ==========================================
     // BOLD
-    // **Travel** → Travel
+    // **Travel** -> Travel
     // ==========================================
 
     html = html.replace(
@@ -51,23 +59,23 @@ function formatGeminiResponse(text) {
 
     // ==========================================
     // BULLET POINTS
-    // * Travel → • Travel
+    // * Travel -> bullet Travel
     // ==========================================
 
     html = html.replace(
         /^\s*\*\s+/gm,
-        "• "
+        "&bull; "
     );
 
     html = html.replace(
         /^\s*-\s+/gm,
-        "• "
+        "&bull; "
     );
 
 
     // ==========================================
     // REMOVE HORIZONTAL LINES
-    // --- → nothing
+    // --- -> nothing
     // ==========================================
 
     html = html.replace(
@@ -113,6 +121,36 @@ function formatGeminiResponse(text) {
 
 
     return html;
+}
+
+
+// ==========================================
+// HIDDEN GEMS INTENT DETECTION
+// ==========================================
+
+function mentionsHiddenGems(message) {
+
+    const keywords = [
+        "hidden gem",
+        "hidden place",
+        "hidden spot",
+        "offbeat",
+        "off-beat",
+        "less crowded",
+        "underrated",
+        "secret spot",
+        "unexplored",
+        "not touristy",
+        "avoid crowds"
+    ];
+
+    const lowerMessage =
+        message.toLowerCase();
+
+    return keywords.some(
+        keyword => lowerMessage.includes(keyword)
+    );
+
 }
 
 
@@ -315,6 +353,8 @@ async function sendPrompt(preset) {
 
         // ==========================================
         // SEND REQUEST TO BACKEND
+        // (includes conversation history so Gemini
+        // remembers earlier turns)
         // ==========================================
 
         const response = await fetch(
@@ -334,7 +374,9 @@ async function sendPrompt(preset) {
 
                 body: JSON.stringify({
 
-                    message: text
+                    message: text,
+
+                    history: conversationHistory
 
                 })
 
@@ -392,6 +434,21 @@ async function sendPrompt(preset) {
 
 
         // ==========================================
+        // UPDATE CONVERSATION HISTORY
+        // ==========================================
+
+        conversationHistory.push({
+            role: "user",
+            text: text
+        });
+
+        conversationHistory.push({
+            role: "model",
+            text: responseMessage
+        });
+
+
+        // ==========================================
         // REMOVE LOADING
         // ==========================================
 
@@ -422,6 +479,25 @@ async function sendPrompt(preset) {
         // SHOW GEMINI RESPONSE
         // ==========================================
 
+        const showHiddenGemsCta =
+            mentionsHiddenGems(text) ||
+            mentionsHiddenGems(responseMessage);
+
+
+        const hiddenGemsCtaHtml = showHiddenGemsCta
+            ? `
+                <button
+                    type="button"
+                    onclick="goToHiddenGems()"
+                    class="mt-3 flex items-center gap-1.5 bg-tertiary-container/15 border border-tertiary-container/40 text-on-tertiary-container text-xs font-label-md px-3 py-2 rounded-full hover:bg-tertiary-container/25 transition-colors"
+                >
+                    <span class="material-symbols-outlined text-[14px]">diamond</span>
+                    View Hidden Gems
+                </button>
+            `
+            : "";
+
+
         log.insertAdjacentHTML(
 
             "beforeend",
@@ -445,6 +521,8 @@ async function sendPrompt(preset) {
                         ${formattedResponse}
 
                     </div>
+
+                    ${hiddenGemsCtaHtml}
 
                 </div>
 
