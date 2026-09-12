@@ -3,27 +3,66 @@
 // ============================================================
 
 
-// ------------------------------------------------------------
-// TRIP SETUP: DATES
-// ------------------------------------------------------------
+// ============================================================
+// DATE HELPERS
+// ============================================================
 
-const startDateEl = document.getElementById('startDate');
-const endDateEl = document.getElementById('endDate');
+function todayISO() {
+
+    const today = new Date();
+
+    const year = today.getFullYear();
+
+    const month = String(
+        today.getMonth() + 1
+    ).padStart(2, '0');
+
+    const day = String(
+        today.getDate()
+    ).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+
+}
+
+
+// ============================================================
+// TRIP SETUP: DATES
+// ============================================================
+
+const startDateEl =
+    document.getElementById('startDate');
+
+const endDateEl =
+    document.getElementById('endDate');
+
 
 if (startDateEl && endDateEl) {
 
-    startDateEl.min = todayISO();
-    endDateEl.min = todayISO();
+    const today = todayISO();
+
+    startDateEl.min = today;
+
+    endDateEl.min = today;
+
 
     startDateEl.addEventListener('change', () => {
 
+        if (!startDateEl.value) {
+            return;
+        }
+
         endDateEl.min = startDateEl.value;
+
 
         if (
             endDateEl.value &&
             endDateEl.value < startDateEl.value
         ) {
-            endDateEl.value = startDateEl.value;
+
+            endDateEl.value =
+                startDateEl.value;
+
         }
 
     });
@@ -31,97 +70,149 @@ if (startDateEl && endDateEl) {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // FIND TRAVEL BUDDIES
-// ------------------------------------------------------------
+// ============================================================
 
 function findTravelBuddies() {
 
+    // --------------------------------------------------------
+    // GET FORM ELEMENTS SAFELY
+    // --------------------------------------------------------
+
+    const fromLocationEl =
+        document.getElementById("fromLocation");
+
+    const destinationEl =
+        document.getElementById("destinationInput");
+
+    const startDateEl =
+        document.getElementById("startDate");
+
+    const endDateEl =
+        document.getElementById("endDate");
+
+    // IMPORTANT:
+    // Your HTML uses budgetSelect, NOT budgetInput.
+    const budgetEl =
+        document.getElementById("budgetSelect");
+
+    const interestsEl =
+        document.getElementById("interestsInput");
+
+
+    // --------------------------------------------------------
+    // READ VALUES
+    // --------------------------------------------------------
+
     const from =
-        document
-            .getElementById("fromLocation")
-            .value
-            .trim();
+        fromLocationEl
+            ? fromLocationEl.value.trim()
+            : "";
+
 
     const destination =
-        document
-            .getElementById("destinationInput")
-            .value
-            .trim();
+        destinationEl
+            ? destinationEl.value.trim()
+            : "";
+
 
     const startDate =
-        document
-            .getElementById("startDate")
-            .value;
+        startDateEl
+            ? startDateEl.value
+            : "";
+
 
     const endDate =
-        document
-            .getElementById("endDate")
-            .value;
+        endDateEl
+            ? endDateEl.value
+            : "";
+
 
     const budget =
-        document
-            .getElementById("budgetInput")
-            .value;
+        budgetEl
+            ? budgetEl.value
+            : "";
+
 
     const interests =
-        document
-            .getElementById("interestsInput")
-            .value
-            .trim();
+        interestsEl
+            ? interestsEl.value.trim()
+            : "";
 
 
-    if (!from) {
-
-        alert("Please enter where you are travelling from.");
-
-        return;
-    }
-
+    // --------------------------------------------------------
+    // VALIDATION
+    // --------------------------------------------------------
 
     if (!destination) {
 
-        alert("Please enter your destination.");
+        alert(
+            "Please enter your destination."
+        );
 
         return;
+
     }
 
 
     if (!startDate || !endDate) {
 
-        alert("Please select your travel dates.");
+        alert(
+            "Please select your travel dates."
+        );
 
         return;
+
     }
 
 
     if (!budget) {
 
-        alert("Please select your budget style.");
+        alert(
+            "Please select your budget style."
+        );
 
         return;
+
     }
 
 
     if (!interests) {
 
-        alert("Please enter at least one travel interest.");
+        alert(
+            "Please enter at least one travel interest."
+        );
 
         return;
+
     }
 
+
+    // --------------------------------------------------------
+    // CREATE USER TRIP PREFERENCES
+    // --------------------------------------------------------
 
     const preferences = {
 
         from: from,
+
         destination: destination,
+
         startDate: startDate,
+
         endDate: endDate,
+
         budget: budget,
+
         interests: interests
 
     };
 
+
+    // --------------------------------------------------------
+    // SAVE PREFERENCES
+    // --------------------------------------------------------
 
     localStorage.setItem(
         "ferenePreferences",
@@ -129,14 +220,44 @@ function findTravelBuddies() {
     );
 
 
-    window.location.href = "swipe.html";
+    // Also save a cleaner version for other Ferene pages.
+    localStorage.setItem(
+        "fereneUserTrip",
+        JSON.stringify({
+
+            from: from,
+
+            destination: destination,
+
+            startDate: startDate,
+
+            endDate: endDate,
+
+            budget: budget,
+
+            interests: interests
+                .split(",")
+                .map(item => item.trim())
+                .filter(Boolean)
+                .map(item => item.toLowerCase())
+
+        })
+    );
+
+
+    // --------------------------------------------------------
+    // GO TO MATCHING PAGE
+    // --------------------------------------------------------
+
+    window.location.href =
+        "swipe.html";
 
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // USE MY LOCATION
-// ------------------------------------------------------------
+// ============================================================
 
 function useMyLocation() {
 
@@ -150,6 +271,13 @@ function useMyLocation() {
         document.getElementById('useLocationBtn');
 
 
+    if (!destinationInput) {
+
+        return;
+
+    }
+
+
     if (!navigator.geolocation) {
 
         showStatus(
@@ -158,7 +286,23 @@ function useMyLocation() {
         );
 
         return;
+
     }
+
+
+    if (btn) {
+
+        btn.disabled = true;
+
+        btn.classList.add('opacity-60');
+
+    }
+
+
+    showStatus(
+        'Detecting your location...',
+        false
+    );
 
 
     navigator.geolocation.getCurrentPosition(
@@ -173,35 +317,44 @@ function useMyLocation() {
 
             try {
 
-                const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-                    {
-                        headers: {
-                            'Accept-Language': 'en'
+                const res =
+                    await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+                        {
+                            headers: {
+                                'Accept-Language': 'en'
+                            }
                         }
-                    }
-                );
+                    );
 
 
                 if (!res.ok) {
-                    throw new Error('Reverse geocoding failed');
+
+                    throw new Error(
+                        'Reverse geocoding failed'
+                    );
+
                 }
 
 
-                const data = await res.json();
+                const data =
+                    await res.json();
 
 
                 const place =
                     data.address?.city ||
                     data.address?.town ||
                     data.address?.village ||
+                    data.address?.municipality ||
                     data.address?.state ||
                     data.display_name;
 
 
                 if (place) {
 
-                    destinationInput.value = place;
+                    destinationInput.value =
+                        place;
+
 
                     showStatus(
                         `Location set to ${place}`,
@@ -232,7 +385,13 @@ function useMyLocation() {
             } finally {
 
                 if (btn) {
+
                     btn.disabled = false;
+
+                    btn.classList.remove(
+                        'opacity-60'
+                    );
+
                 }
 
             }
@@ -243,11 +402,21 @@ function useMyLocation() {
         (err) => {
 
             if (btn) {
+
                 btn.disabled = false;
+
+                btn.classList.remove(
+                    'opacity-60'
+                );
+
             }
 
 
-            if (err.code === err.PERMISSION_DENIED) {
+            if (
+                err &&
+                err.code ===
+                err.PERMISSION_DENIED
+            ) {
 
                 showStatus(
                     'Location permission denied. Enter your destination manually.',
@@ -267,7 +436,13 @@ function useMyLocation() {
 
 
         {
-            timeout: 8000
+
+            enableHighAccuracy: true,
+
+            timeout: 8000,
+
+            maximumAge: 0
+
         }
 
     );
@@ -275,20 +450,28 @@ function useMyLocation() {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // LOCATION STATUS
-// ------------------------------------------------------------
+// ============================================================
 
-function showStatus(message, isError) {
+function showStatus(
+    message,
+    isError
+) {
 
     const statusEl =
-        document.getElementById('locationStatus');
+        document.getElementById(
+            'locationStatus'
+        );
 
 
-    if (!statusEl) return;
+    if (!statusEl) {
+        return;
+    }
 
 
-    statusEl.textContent = message;
+    statusEl.textContent =
+        message;
 
 
     statusEl.classList.remove(
@@ -299,12 +482,15 @@ function showStatus(message, isError) {
 
 
     statusEl.classList.add(
+
         isError
             ? 'text-tertiary'
             : 'text-text-muted'
+
     );
 
 }
+
 
 // ============================================================
 // EMERGENCY SOS SYSTEM
@@ -359,58 +545,70 @@ const gpsStatusIcon =
     document.getElementById('gpsStatusIcon');
 
 
-// ------------------------------------------------------------
+// ============================================================
 // SOS STATE
-// ------------------------------------------------------------
+// ============================================================
 
 let emergencyLocation = null;
 
 let sosIsActive = false;
 
 
-// ------------------------------------------------------------
+// ============================================================
 // OPEN SOS PANEL
-// ------------------------------------------------------------
+// ============================================================
 
 if (sosButton) {
 
-    sosButton.addEventListener('click', () => {
+    sosButton.addEventListener(
+        'click',
+        () => {
 
-        if (sosIsActive) {
+            if (sosIsActive) {
 
-            showSOSView('success');
+                showSOSView('success');
 
-        } else {
+            } else {
 
-            showSOSView('confirm');
+                showSOSView('confirm');
+
+            }
+
+
+            if (sosModal) {
+
+                sosModal.classList.remove(
+                    'hidden'
+                );
+
+                document.body.style.overflow =
+                    'hidden';
+
+            }
 
         }
-
-
-        if (sosModal) {
-
-            sosModal.classList.remove('hidden');
-
-            document.body.style.overflow = 'hidden';
-
-        }
-
-    });
+    );
 
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // CLOSE SOS PANEL
-// ------------------------------------------------------------
+// ============================================================
 
 function closeSOSPanel() {
 
-    if (!sosModal) return;
+    if (!sosModal) {
+        return;
+    }
 
-    sosModal.classList.add('hidden');
 
-    document.body.style.overflow = '';
+    sosModal.classList.add(
+        'hidden'
+    );
+
+    document.body.style.overflow =
+        '';
 
 }
 
@@ -435,47 +633,58 @@ if (closeSOS) {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // CLICK OUTSIDE MODAL
-// ------------------------------------------------------------
+// ============================================================
 
 if (sosModal) {
 
-    sosModal.addEventListener('click', (event) => {
+    sosModal.addEventListener(
+        'click',
+        (event) => {
 
-        if (event.target === sosModal) {
+            if (
+                event.target ===
+                sosModal
+            ) {
+
+                closeSOSPanel();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// ESC KEY
+// ============================================================
+
+document.addEventListener(
+    'keydown',
+    (event) => {
+
+        if (
+            event.key === 'Escape' &&
+            sosModal &&
+            !sosModal.classList.contains(
+                'hidden'
+            )
+        ) {
 
             closeSOSPanel();
 
         }
 
-    });
-
-}
-
-
-// ------------------------------------------------------------
-// ESC KEY
-// ------------------------------------------------------------
-
-document.addEventListener('keydown', (event) => {
-
-    if (
-        event.key === 'Escape' &&
-        sosModal &&
-        !sosModal.classList.contains('hidden')
-    ) {
-
-        closeSOSPanel();
-
     }
+);
 
-});
 
-
-// ------------------------------------------------------------
+// ============================================================
 // CHANGE SOS VIEW
-// ------------------------------------------------------------
+// ============================================================
 
 function showSOSView(view) {
 
@@ -484,34 +693,48 @@ function showSOSView(view) {
         !sosLoadingView ||
         !sosSuccessView
     ) {
+
         return;
+
     }
 
 
-    sosConfirmView.classList.add('hidden');
+    sosConfirmView.classList.add(
+        'hidden'
+    );
 
-    sosLoadingView.classList.add('hidden');
+    sosLoadingView.classList.add(
+        'hidden'
+    );
 
-    sosSuccessView.classList.add('hidden');
+    sosSuccessView.classList.add(
+        'hidden'
+    );
 
 
     if (view === 'confirm') {
 
-        sosConfirmView.classList.remove('hidden');
+        sosConfirmView.classList.remove(
+            'hidden'
+        );
 
     }
 
 
     if (view === 'loading') {
 
-        sosLoadingView.classList.remove('hidden');
+        sosLoadingView.classList.remove(
+            'hidden'
+        );
 
     }
 
 
     if (view === 'success') {
 
-        sosSuccessView.classList.remove('hidden');
+        sosSuccessView.classList.remove(
+            'hidden'
+        );
 
     }
 
@@ -534,7 +757,9 @@ if (activateSOS) {
 
 function activateEmergencySOS() {
 
-    showSOSView('loading');
+    showSOSView(
+        'loading'
+    );
 
     sosIsActive = false;
 
@@ -560,6 +785,7 @@ function activateEmergencySOS() {
         );
 
         return;
+
     }
 
 
@@ -573,21 +799,24 @@ function activateEmergencySOS() {
             } = position.coords;
 
 
-            // Store emergency location
             emergencyLocation = {
 
                 latitude,
+
                 longitude,
+
                 timestamp: new Date()
 
             };
 
 
-            // SOS is active
             sosIsActive = true;
 
 
-            // GPS status
+            // ------------------------------------------------
+            // GPS STATUS
+            // ------------------------------------------------
+
             if (gpsStatusIcon) {
 
                 gpsStatusIcon.textContent =
@@ -604,12 +833,18 @@ function activateEmergencySOS() {
             }
 
 
-            // Google Maps link
+            // ------------------------------------------------
+            // GOOGLE MAPS LINK
+            // ------------------------------------------------
+
             const mapLink =
                 `https://www.google.com/maps?q=${latitude},${longitude}`;
 
 
-            // Coordinates
+            // ------------------------------------------------
+            // COORDINATES
+            // ------------------------------------------------
+
             if (sosCoordinates) {
 
                 sosCoordinates.textContent =
@@ -618,15 +853,22 @@ function activateEmergencySOS() {
             }
 
 
-            // Map
+            // ------------------------------------------------
+            // MAP
+            // ------------------------------------------------
+
             if (sosMapLink) {
 
-                sosMapLink.href = mapLink;
+                sosMapLink.href =
+                    mapLink;
 
             }
 
 
-            // Activation time
+            // ------------------------------------------------
+            // ACTIVATION TIME
+            // ------------------------------------------------
+
             if (sosTime) {
 
                 sosTime.textContent =
@@ -637,10 +879,14 @@ function activateEmergencySOS() {
             }
 
 
-            // Share status
+            // ------------------------------------------------
+            // SHARE STATUS
+            // ------------------------------------------------
+
             if (shareStatus) {
 
-                shareStatus.textContent = 'Ready';
+                shareStatus.textContent =
+                    'Ready';
 
                 shareStatus.classList.remove(
                     'text-green-600',
@@ -654,7 +900,10 @@ function activateEmergencySOS() {
             }
 
 
-            // Message
+            // ------------------------------------------------
+            // MESSAGE
+            // ------------------------------------------------
+
             if (sosMessage) {
 
                 sosMessage.textContent =
@@ -663,14 +912,24 @@ function activateEmergencySOS() {
             }
 
 
-            // Small delay for reassurance UX
-            setTimeout(() => {
+            // ------------------------------------------------
+            // REASSURANCE DELAY
+            // ------------------------------------------------
 
-                showSOSView('success');
+            setTimeout(
+                () => {
 
-                updateSOSButton(true);
+                    showSOSView(
+                        'success'
+                    );
 
-            }, 700);
+                    updateSOSButton(
+                        true
+                    );
+
+                },
+                700
+            );
 
         },
 
@@ -685,9 +944,13 @@ function activateEmergencySOS() {
 
 
         {
+
             enableHighAccuracy: true,
+
             timeout: 10000,
+
             maximumAge: 0
+
         }
 
     );
@@ -701,11 +964,15 @@ function activateEmergencySOS() {
 
 function showLocationError(message) {
 
-    showSOSView('confirm');
+    showSOSView(
+        'confirm'
+    );
 
     alert(message);
 
-    updateSOSButton(false);
+    updateSOSButton(
+        false
+    );
 
     sosIsActive = false;
 
@@ -718,7 +985,9 @@ function showLocationError(message) {
 
 function updateSOSButton(active) {
 
-    if (!sosButton) return;
+    if (!sosButton) {
+        return;
+    }
 
 
     sosButton.disabled = false;
@@ -792,6 +1061,7 @@ async function shareEmergencyInformation() {
         );
 
         return;
+
     }
 
 
@@ -823,19 +1093,25 @@ ${formatDateTime(timestamp)}`;
 
     shareSOS.disabled = true;
 
-    shareSOS.textContent = 'Preparing...';
+    shareSOS.textContent =
+        'Preparing...';
 
 
     try {
 
-        // Mobile / supported browsers
+        // ----------------------------------------------------
+        // MOBILE / SUPPORTED BROWSERS
+        // ----------------------------------------------------
+
         if (navigator.share) {
 
             await navigator.share({
 
-                title: 'Ferene Emergency SOS',
+                title:
+                    'Ferene Emergency SOS',
 
-                text: message
+                text:
+                    message
 
             });
 
@@ -844,10 +1120,16 @@ ${formatDateTime(timestamp)}`;
 
         }
 
-        // Desktop fallback
+
+        // ----------------------------------------------------
+        // DESKTOP FALLBACK
+        // ----------------------------------------------------
+
         else {
 
-            await navigator.clipboard.writeText(message);
+            await navigator.clipboard.writeText(
+                message
+            );
 
             markInformationCopied();
 
@@ -857,21 +1139,30 @@ ${formatDateTime(timestamp)}`;
     } catch (error) {
 
         // User closed the share menu
-        if (error.name === 'AbortError') {
+        if (
+            error &&
+            error.name === 'AbortError'
+        ) {
 
             shareSOS.disabled = false;
 
-            shareSOS.textContent = 'Share location';
+            shareSOS.textContent =
+                'Share location';
 
             return;
 
         }
 
 
-        // Try clipboard
+        // ----------------------------------------------------
+        // CLIPBOARD FALLBACK
+        // ----------------------------------------------------
+
         try {
 
-            await navigator.clipboard.writeText(message);
+            await navigator.clipboard.writeText(
+                message
+            );
 
             markInformationCopied();
 
@@ -884,7 +1175,8 @@ ${formatDateTime(timestamp)}`;
 
             shareSOS.disabled = false;
 
-            shareSOS.textContent = 'Share location';
+            shareSOS.textContent =
+                'Share location';
 
         }
 
@@ -926,15 +1218,19 @@ function markInformationShared() {
     }
 
 
-    shareSOS.disabled = false;
+    if (shareSOS) {
+
+        shareSOS.disabled = false;
 
 
-    shareSOS.innerHTML = `
-        <span class="material-symbols-outlined text-[18px] align-middle">
-            check_circle
-        </span>
-        Shared
-    `;
+        shareSOS.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] align-middle">
+                check_circle
+            </span>
+            Shared
+        `;
+
+    }
 
 }
 
@@ -972,15 +1268,19 @@ function markInformationCopied() {
     }
 
 
-    shareSOS.disabled = false;
+    if (shareSOS) {
+
+        shareSOS.disabled = false;
 
 
-    shareSOS.innerHTML = `
-        <span class="material-symbols-outlined text-[18px] align-middle">
-            check_circle
-        </span>
-        Copied
-    `;
+        shareSOS.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] align-middle">
+                check_circle
+            </span>
+            Copied
+        `;
+
+    }
 
 }
 
@@ -995,13 +1295,16 @@ if (deactivateSOS) {
         'click',
         () => {
 
-            const confirmed = confirm(
-                'Deactivate Emergency SOS?\n\n' +
-                'This will end the active SOS state in Ferene.'
-            );
+            const confirmed =
+                confirm(
+                    'Deactivate Emergency SOS?\n\n' +
+                    'This will end the active SOS state in Ferene.'
+                );
 
 
-            if (!confirmed) return;
+            if (!confirmed) {
+                return;
+            }
 
 
             deactivateEmergencySOS();
@@ -1019,7 +1322,10 @@ function deactivateEmergencySOS() {
     emergencyLocation = null;
 
 
-    // Reset GPS indicator
+    // --------------------------------------------------------
+    // RESET GPS INDICATOR
+    // --------------------------------------------------------
+
     if (gpsStatusIcon) {
 
         gpsStatusIcon.textContent =
@@ -1038,7 +1344,10 @@ function deactivateEmergencySOS() {
     }
 
 
-    // Reset share status
+    // --------------------------------------------------------
+    // RESET SHARE STATUS
+    // --------------------------------------------------------
+
     if (shareStatus) {
 
         shareStatus.textContent =
@@ -1058,7 +1367,10 @@ function deactivateEmergencySOS() {
     }
 
 
-    // Reset message
+    // --------------------------------------------------------
+    // RESET MESSAGE
+    // --------------------------------------------------------
+
     if (sosMessage) {
 
         sosMessage.textContent =
@@ -1067,18 +1379,31 @@ function deactivateEmergencySOS() {
     }
 
 
-    // Reset header
-    updateSOSButton(false);
+    // --------------------------------------------------------
+    // RESET HEADER
+    // --------------------------------------------------------
+
+    updateSOSButton(
+        false
+    );
 
 
-    // Give user a moment to see state change
-    setTimeout(() => {
+    // --------------------------------------------------------
+    // CLOSE AFTER SHORT DELAY
+    // --------------------------------------------------------
 
-        closeSOSPanel();
+    setTimeout(
+        () => {
 
-        showSOSView('confirm');
+            closeSOSPanel();
 
-    }, 800);
+            showSOSView(
+                'confirm'
+            );
+
+        },
+        800
+    );
 
 }
 
@@ -1109,12 +1434,5 @@ function formatDateTime(date) {
             timeStyle: 'short'
         }
     );
-  return date.toLocaleString(
-    [],
-    {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }
-  );
 
 }
