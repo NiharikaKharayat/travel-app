@@ -12,8 +12,7 @@ const BACKEND_URL = "http://127.0.0.1:8000";
 const ROOM_ID = "travel-group";
 
 const USERNAME =
-    localStorage.getItem("ferene_username")
-    || "Traveler";
+    localStorage.getItem("ferene_username") || "Traveler";
 
 
 // =================================================
@@ -37,17 +36,18 @@ const sendButton =
 // SOCKET CONNECTION
 // =================================================
 
+console.log("=================================");
+console.log("FERENE CHATROOM");
 console.log("Starting Socket.IO connection...");
-
 console.log("Backend URL:", BACKEND_URL);
+console.log("Username:", USERNAME);
+console.log("Room:", ROOM_ID);
+console.log("=================================");
 
 
 const socket = io(
-
     BACKEND_URL,
-
     {
-
         path: "/socket.io",
 
         transports: [
@@ -64,137 +64,116 @@ const socket = io(
         reconnectionDelay: 1000,
 
         forceNew: true
-
     }
-
 );
 
 
 // =================================================
-// INITIAL CONNECTION STATUS
+// INITIAL STATUS
 // =================================================
 
-connectionStatus.textContent =
-    "Connecting...";
+if (connectionStatus) {
 
-connectionStatus.style.color =
-    "#64748b";
+    connectionStatus.textContent =
+        "Connecting...";
+
+    connectionStatus.style.color =
+        "#64748b";
+}
 
 
 // =================================================
 // SOCKET CONNECTED
 // =================================================
 
-socket.on(
+socket.on("connect", () => {
 
-    "connect",
+    console.log("=================================");
+    console.log("SOCKET CONNECTED");
+    console.log("MY SOCKET ID:", socket.id);
+    console.log("USERNAME:", USERNAME);
+    console.log("=================================");
 
-    () => {
 
-        console.log("=================================");
-        console.log("SOCKET CONNECTED SUCCESSFULLY");
-        console.log("Socket ID:", socket.id);
-        console.log("=================================");
-
+    if (connectionStatus) {
 
         connectionStatus.textContent =
             "Connected";
 
         connectionStatus.style.color =
             "#16a34a";
-
-
-        // JOIN THE TRAVEL GROUP
-
-        socket.emit(
-
-            "join_room",
-
-            {
-
-                room: ROOM_ID,
-
-                username: USERNAME
-
-            },
-
-            (response) => {
-
-                console.log(
-                    "Join room response:",
-                    response
-                );
-
-            }
-
-        );
-
     }
 
-);
+
+    // =================================================
+    // JOIN ROOM
+    // =================================================
+
+    socket.emit(
+        "join_room",
+        {
+            room: ROOM_ID,
+            username: USERNAME
+        },
+        (response) => {
+
+            console.log(
+                "Join room response:",
+                response
+            );
+
+        }
+    );
+
+});
 
 
 // =================================================
 // SOCKET DISCONNECTED
 // =================================================
 
-socket.on(
+socket.on("disconnect", (reason) => {
 
-    "disconnect",
+    console.log(
+        "Socket disconnected:",
+        reason
+    );
 
-    (reason) => {
 
-        console.log(
-            "Socket disconnected:",
-            reason
-        );
-
+    if (connectionStatus) {
 
         connectionStatus.textContent =
             "Disconnected";
 
         connectionStatus.style.color =
             "#dc2626";
-
     }
 
-);
+});
 
 
 // =================================================
 // CONNECTION ERROR
 // =================================================
 
-socket.on(
+socket.on("connect_error", (error) => {
 
-    "connect_error",
+    console.error(
+        "Socket connection error:",
+        error
+    );
 
-    (error) => {
 
-        console.error(
-            "================================="
-        );
-
-        console.error(
-            "SOCKET CONNECTION ERROR"
-        );
-
-        console.error(error);
-
-        console.error(
-            "================================="
-        );
-
+    if (connectionStatus) {
 
         connectionStatus.textContent =
             "Connection failed";
 
         connectionStatus.style.color =
             "#dc2626";
-
     }
 
-);
+});
 
 
 // =================================================
@@ -202,9 +181,7 @@ socket.on(
 // =================================================
 
 socket.on(
-
     "reconnect_attempt",
-
     (attemptNumber) => {
 
         console.log(
@@ -213,14 +190,16 @@ socket.on(
         );
 
 
-        connectionStatus.textContent =
-            "Reconnecting...";
+        if (connectionStatus) {
 
-        connectionStatus.style.color =
-            "#f59e0b";
+            connectionStatus.textContent =
+                "Reconnecting...";
+
+            connectionStatus.style.color =
+                "#f59e0b";
+        }
 
     }
-
 );
 
 
@@ -229,22 +208,18 @@ socket.on(
 // =================================================
 
 socket.on(
-
     "system_message",
-
     (data) => {
 
         console.log(
-            "System message received:",
+            "System message:",
             data
         );
 
 
         if (
-
             data &&
             data.message
-
         ) {
 
             addSystemMessage(
@@ -254,7 +229,53 @@ socket.on(
         }
 
     }
+);
 
+
+// =================================================
+// CHAT HISTORY (SENT ONLY TO THE JOINING SOCKET)
+// =================================================
+//
+// This is a one-time event received right after
+// join_room. It is handled separately from
+// "receive_message" so history is never mistaken
+// for a brand-new live message.
+// =================================================
+
+socket.on(
+    "chat_history",
+    (data) => {
+
+        console.log(
+            "Chat history received:",
+            data
+        );
+
+        if (
+            !data ||
+            !Array.isArray(data.messages)
+        ) {
+            return;
+        }
+
+        data.messages.forEach((entry) => {
+
+            if (
+                entry &&
+                entry.message
+            ) {
+
+                addChatMessage(
+                    entry.username || "Traveler",
+                    entry.message,
+                    entry.sender_id
+                );
+
+            }
+
+        });
+
+    }
 );
 
 
@@ -263,36 +284,30 @@ socket.on(
 // =================================================
 
 socket.on(
-
     "receive_message",
-
     (data) => {
 
-        console.log(
-            "Chat message received:",
-            data
-        );
+        console.log("=================================");
+        console.log("CHAT MESSAGE RECEIVED");
+        console.log("MY SOCKET ID:", socket.id);
+        console.log("MESSAGE SENDER ID:", data?.sender_id);
+        console.log("=================================");
 
 
         if (
-
             data &&
             data.message
-
         ) {
 
             addChatMessage(
-
                 data.username || "Traveler",
-
-                data.message
-
+                data.message,
+                data.sender_id
             );
 
         }
 
     }
-
 );
 
 
@@ -302,84 +317,80 @@ socket.on(
 
 function sendMessage() {
 
-    console.log(
-        "Send message button clicked"
-    );
+    if (!messageInput) {
+
+        console.error(
+            "Message input not found."
+        );
+
+        return;
+    }
 
 
     const message =
         messageInput.value.trim();
 
 
-    // CHECK EMPTY MESSAGE
+    // =================================================
+    // EMPTY MESSAGE
+    // =================================================
 
     if (!message) {
-
-        console.log(
-            "Message is empty"
-        );
-
         return;
-
     }
 
 
+    // =================================================
     // CHECK CONNECTION
+    // =================================================
 
     if (!socket.connected) {
 
-        console.error(
-            "Cannot send. Socket not connected."
-        );
+        if (connectionStatus) {
 
+            connectionStatus.textContent =
+                "Not connected";
 
-        connectionStatus.textContent =
-            "Not connected";
-
-        connectionStatus.style.color =
-            "#dc2626";
+            connectionStatus.style.color =
+                "#dc2626";
+        }
 
 
         alert(
             "Chat server is not connected. Please check the connection."
         );
 
-        return;
 
+        return;
     }
 
 
-    console.log(
-        "Sending message:",
-        message
-    );
-
-
-    // SEND MESSAGE TO SERVER
+    // =================================================
+    // SEND MESSAGE
+    // =================================================
+    //
+    // NOTE: We do NOT locally append this message to the
+    // chat UI here. The server broadcasts it back to
+    // everyone in the room, including us, via
+    // "receive_message". Appending it locally as well
+    // would create a duplicate.
+    // =================================================
 
     socket.emit(
-
         "send_message",
-
         {
-
             room: ROOM_ID,
-
             username: USERNAME,
-
             message: message
-
         }
-
     );
 
 
+    // =================================================
     // CLEAR INPUT
+    // =================================================
 
     messageInput.value = "";
-
-
-    // KEEP FOCUS
 
     messageInput.focus();
 
@@ -391,98 +402,139 @@ function sendMessage() {
 // =================================================
 
 function addChatMessage(
-
     username,
-
-    message
-
+    message,
+    senderId
 ) {
 
+    if (!chatMessages) {
+
+        console.error(
+            "chatMessages element not found."
+        );
+
+        return;
+    }
+
+
+    // =================================================
+    // DETERMINE MESSAGE TYPE
+    // =================================================
+    //
+    // IMPORTANT:
+    //
+    // We NEVER use the username to decide left/right,
+    // since two users can share the same username.
+    //
+    // Instead we compare the real Socket.IO sender_id
+    // of the message against our OWN current socket.id.
+    //
+    // sender_id === socket.id
+    //     → THIS IS MY MESSAGE
+    //     → RIGHT SIDE
+    //
+    // sender_id !== socket.id
+    //     → SOMEONE ELSE'S MESSAGE
+    //     → LEFT SIDE
+    //
+    // =================================================
+
+    const isCurrentUser =
+        String(senderId || "").trim() ===
+        String(socket.id || "").trim();
+
+
+    console.log("IS MY MESSAGE:", isCurrentUser);
+
+
+    // =================================================
+    // MESSAGE ROW
+    // =================================================
 
     const messageContainer =
         document.createElement("div");
 
 
-    const isCurrentUser =
-        username === USERNAME;
+    // Explicit class
+    messageContainer.classList.add(
+        "chat-message-row"
+    );
 
 
     if (isCurrentUser) {
 
-        messageContainer.className =
-            "flex justify-end mb-4";
+        messageContainer.classList.add(
+            "sent"
+        );
+
+    } else {
+
+        messageContainer.classList.add(
+            "received"
+        );
 
     }
 
-    else {
 
-        messageContainer.className =
-            "flex justify-start mb-4";
-
-    }
-
+    // =================================================
+    // MESSAGE BUBBLE
+    // =================================================
 
     const messageBubble =
         document.createElement("div");
 
 
-    if (isCurrentUser) {
-
-        messageBubble.className =
-            "max-w-[75%] bg-gradient-to-r from-gradient-start to-gradient-end text-white px-5 py-3 rounded-2xl rounded-br-sm shadow-sm";
-
-    }
-
-    else {
-
-        messageBubble.className =
-            "max-w-[75%] bg-surface-container-low text-on-surface px-5 py-3 rounded-2xl rounded-bl-sm shadow-sm";
-
-    }
+    messageBubble.classList.add(
+        "chat-bubble"
+    );
 
 
+    // =================================================
     // USERNAME
+    // =================================================
 
     const usernameElement =
         document.createElement("p");
 
 
-    if (isCurrentUser) {
+    usernameElement.classList.add(
+        "chat-sender-name"
+    );
 
-        usernameElement.className =
-            "text-xs font-semibold opacity-80 mb-1";
+
+    if (isCurrentUser) {
 
         usernameElement.textContent =
             "You";
 
-    }
-
-    else {
-
-        usernameElement.className =
-            "text-xs font-semibold text-primary mb-1";
+    } else {
 
         usernameElement.textContent =
-            username;
+            username || "Traveler";
 
     }
 
 
+    // =================================================
     // MESSAGE TEXT
+    // =================================================
 
     const messageElement =
         document.createElement("p");
 
 
-    messageElement.className =
-        "text-sm break-words";
+    messageElement.classList.add(
+        "chat-message-text"
+    );
 
 
     messageElement.textContent =
         message;
 
 
-    // ADD ELEMENTS
+    // =================================================
+    // BUILD MESSAGE BUBBLE
+    // =================================================
 
     messageBubble.appendChild(
         usernameElement
@@ -494,15 +546,27 @@ function addChatMessage(
     );
 
 
+    // =================================================
+    // ADD BUBBLE TO ROW
+    // =================================================
+
     messageContainer.appendChild(
         messageBubble
     );
 
 
+    // =================================================
+    // ADD ROW TO CHAT
+    // =================================================
+
     chatMessages.appendChild(
         messageContainer
     );
 
+
+    // =================================================
+    // SCROLL TO BOTTOM
+    // =================================================
 
     scrollToBottom();
 
@@ -515,21 +579,22 @@ function addChatMessage(
 
 function addSystemMessage(message) {
 
+    if (!chatMessages) {
+        return;
+    }
+
 
     const container =
         document.createElement("div");
 
 
-    container.className =
-        "flex justify-center mb-4";
+    container.classList.add(
+        "chat-system-message"
+    );
 
 
     const messageElement =
-        document.createElement("div");
-
-
-    messageElement.className =
-        "bg-primary-container/10 text-text-muted px-4 py-2 rounded-full text-xs";
+        document.createElement("span");
 
 
     messageElement.textContent =
@@ -557,18 +622,19 @@ function addSystemMessage(message) {
 
 function scrollToBottom() {
 
+    if (!chatMessages) {
+        return;
+    }
+
 
     setTimeout(
-
         () => {
 
             chatMessages.scrollTop =
                 chatMessages.scrollHeight;
 
         },
-
         50
-
     );
 
 }
@@ -578,47 +644,45 @@ function scrollToBottom() {
 // ENTER KEY
 // =================================================
 
-messageInput.addEventListener(
+if (messageInput) {
 
-    "keydown",
+    messageInput.addEventListener(
+        "keydown",
+        (event) => {
 
-    function(event) {
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey
+            ) {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+
+        }
+    );
+
+}
 
 
-        if (
+// =================================================
+// SEND BUTTON
+// =================================================
 
-            event.key === "Enter"
+if (sendButton) {
 
-        ) {
-
-
-            event.preventDefault();
-
+    sendButton.addEventListener(
+        "click",
+        () => {
 
             sendMessage();
 
         }
+    );
 
-    }
-
-);
-
-
-// =================================================
-// SEND BUTTON EVENT LISTENER
-// =================================================
-
-sendButton.addEventListener(
-
-    "click",
-
-    function() {
-
-        sendMessage();
-
-    }
-
-);
+}
 
 
 // =================================================
@@ -626,25 +690,24 @@ sendButton.addEventListener(
 // =================================================
 
 window.addEventListener(
-
     "load",
-
     () => {
-
 
         console.log(
             "Chatroom page loaded"
         );
 
-
         console.log(
-            "Socket object:",
-            socket
+            "Current Socket ID:",
+            socket.id
         );
 
 
-        messageInput.focus();
+        if (messageInput) {
+
+            messageInput.focus();
+
+        }
 
     }
-
 );

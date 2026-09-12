@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // ============================================================
 // FERENE HOME PAGE
 // ============================================================
@@ -10,7 +9,32 @@
 
 const startDateEl = document.getElementById('startDate');
 const endDateEl = document.getElementById('endDate');
-=======
+
+if (startDateEl && endDateEl) {
+
+    startDateEl.min = todayISO();
+    endDateEl.min = todayISO();
+
+    startDateEl.addEventListener('change', () => {
+
+        endDateEl.min = startDateEl.value;
+
+        if (
+            endDateEl.value &&
+            endDateEl.value < startDateEl.value
+        ) {
+            endDateEl.value = startDateEl.value;
+        }
+
+    });
+
+}
+
+
+// ------------------------------------------------------------
+// FIND TRAVEL BUDDIES
+// ------------------------------------------------------------
+
 function findTravelBuddies() {
 
     const from =
@@ -18,24 +42,95 @@ function findTravelBuddies() {
             .getElementById("fromLocation")
             .value
             .trim();
->>>>>>> friend/main
+
+    const destination =
+        document
+            .getElementById("destinationInput")
+            .value
+            .trim();
+
+    const startDate =
+        document
+            .getElementById("startDate")
+            .value;
+
+    const endDate =
+        document
+            .getElementById("endDate")
+            .value;
+
+    const budget =
+        document
+            .getElementById("budgetInput")
+            .value;
+
+    const interests =
+        document
+            .getElementById("interestsInput")
+            .value
+            .trim();
 
 
-<<<<<<< HEAD
-if (startDateEl && endDateEl) {
-  startDateEl.min = todayISO();
-  endDateEl.min = todayISO();
+    if (!from) {
 
-  startDateEl.addEventListener('change', () => {
-    endDateEl.min = startDateEl.value;
+        alert("Please enter where you are travelling from.");
 
-    if (
-      endDateEl.value &&
-      endDateEl.value < startDateEl.value
-    ) {
-      endDateEl.value = startDateEl.value;
+        return;
     }
-  });
+
+
+    if (!destination) {
+
+        alert("Please enter your destination.");
+
+        return;
+    }
+
+
+    if (!startDate || !endDate) {
+
+        alert("Please select your travel dates.");
+
+        return;
+    }
+
+
+    if (!budget) {
+
+        alert("Please select your budget style.");
+
+        return;
+    }
+
+
+    if (!interests) {
+
+        alert("Please enter at least one travel interest.");
+
+        return;
+    }
+
+
+    const preferences = {
+
+        from: from,
+        destination: destination,
+        startDate: startDate,
+        endDate: endDate,
+        budget: budget,
+        interests: interests
+
+    };
+
+
+    localStorage.setItem(
+        "ferenePreferences",
+        JSON.stringify(preferences)
+    );
+
+
+    window.location.href = "swipe.html";
+
 }
 
 
@@ -44,143 +139,171 @@ if (startDateEl && endDateEl) {
 // ------------------------------------------------------------
 
 function useMyLocation() {
-  const statusEl = document.getElementById('locationStatus');
-  const destinationInput =
-    document.getElementById('destinationInput');
 
-  const btn =
-    document.getElementById('useLocationBtn');
+    const statusEl =
+        document.getElementById('locationStatus');
 
-  if (!navigator.geolocation) {
-    showStatus(
-      'Geolocation is not supported in this browser.',
-      true
-    );
-    return;
-  }
-=======
-    const destination =
-        document
-            .getElementById("destinationInput")
-            .value
-            .trim();
+    const destinationInput =
+        document.getElementById('destinationInput');
+
+    const btn =
+        document.getElementById('useLocationBtn');
 
 
-    const startDate =
-        document
-            .getElementById("startDate")
-            .value;
+    if (!navigator.geolocation) {
 
->>>>>>> friend/main
-
-    const endDate =
-        document
-            .getElementById("endDate")
-            .value;
-
-<<<<<<< HEAD
-  navigator.geolocation.getCurrentPosition(
-
-    async (position) => {
-      const {
-        latitude,
-        longitude
-      } = position.coords;
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-          {
-            headers: {
-              'Accept-Language': 'en'
-            }
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error('Reverse geocoding failed');
-        }
-
-        const data = await res.json();
-
-        const place =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.village ||
-          data.address?.state ||
-          data.display_name;
-
-        if (place) {
-          destinationInput.value = place;
-
-          showStatus(
-            `Location set to ${place}`,
-            false
-          );
-        } else {
-          showStatus(
-            'Could not determine a place name for your location.',
+        showStatus(
+            'Geolocation is not supported in this browser.',
             true
-          );
+        );
+
+        return;
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        async (position) => {
+
+            const {
+                latitude,
+                longitude
+            } = position.coords;
+
+
+            try {
+
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+                    {
+                        headers: {
+                            'Accept-Language': 'en'
+                        }
+                    }
+                );
+
+
+                if (!res.ok) {
+                    throw new Error('Reverse geocoding failed');
+                }
+
+
+                const data = await res.json();
+
+
+                const place =
+                    data.address?.city ||
+                    data.address?.town ||
+                    data.address?.village ||
+                    data.address?.state ||
+                    data.display_name;
+
+
+                if (place) {
+
+                    destinationInput.value = place;
+
+                    showStatus(
+                        `Location set to ${place}`,
+                        false
+                    );
+
+                } else {
+
+                    showStatus(
+                        'Could not determine a place name for your location.',
+                        true
+                    );
+
+                }
+
+
+            } catch (err) {
+
+                showStatus(
+                    'Found your coordinates, but could not resolve a place name.',
+                    true
+                );
+
+
+                destinationInput.value =
+                    `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+            } finally {
+
+                if (btn) {
+                    btn.disabled = false;
+                }
+
+            }
+
+        },
+
+
+        (err) => {
+
+            if (btn) {
+                btn.disabled = false;
+            }
+
+
+            if (err.code === err.PERMISSION_DENIED) {
+
+                showStatus(
+                    'Location permission denied. Enter your destination manually.',
+                    true
+                );
+
+            } else {
+
+                showStatus(
+                    'Could not get your location. Enter it manually.',
+                    true
+                );
+
+            }
+
+        },
+
+
+        {
+            timeout: 8000
         }
 
-      } catch (err) {
+    );
 
-        showStatus(
-          'Found your coordinates, but could not resolve a place name.',
-          true
-        );
-
-        destinationInput.value =
-          `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-
-      } finally {
-        btn.disabled = false;
-      }
-    },
-
-    (err) => {
-      btn.disabled = false;
-
-      if (err.code === err.PERMISSION_DENIED) {
-        showStatus(
-          'Location permission denied. Enter your destination manually.',
-          true
-        );
-      } else {
-        showStatus(
-          'Could not get your location. Enter it manually.',
-          true
-        );
-      }
-    },
-
-    {
-      timeout: 8000
-    }
-  );
 }
 
 
+// ------------------------------------------------------------
+// LOCATION STATUS
+// ------------------------------------------------------------
+
 function showStatus(message, isError) {
-  const statusEl =
-    document.getElementById('locationStatus');
 
-  if (!statusEl) return;
+    const statusEl =
+        document.getElementById('locationStatus');
 
-  statusEl.textContent = message;
 
-  statusEl.classList.remove(
-    'hidden',
-    'text-tertiary',
-    'text-text-muted'
-  );
+    if (!statusEl) return;
 
-  statusEl.classList.add(
-    isError
-      ? 'text-tertiary'
-      : 'text-text-muted'
-  );
+
+    statusEl.textContent = message;
+
+
+    statusEl.classList.remove(
+        'hidden',
+        'text-tertiary',
+        'text-text-muted'
+    );
+
+
+    statusEl.classList.add(
+        isError
+            ? 'text-tertiary'
+            : 'text-text-muted'
+    );
+
 }
 
 
@@ -189,58 +312,60 @@ function showStatus(message, isError) {
 // ============================================================
 
 const sosButton =
-  document.getElementById('sosButton');
+    document.getElementById('sosButton');
 
 const sosModal =
-  document.getElementById('sosModal');
+    document.getElementById('sosModal');
 
 const activateSOS =
-  document.getElementById('activateSOS');
+    document.getElementById('activateSOS');
 
 const deactivateSOS =
-  document.getElementById('deactivateSOS');
+    document.getElementById('deactivateSOS');
 
 const cancelSOS =
-  document.getElementById('cancelSOS');
+    document.getElementById('cancelSOS');
 
 const closeSOS =
-  document.getElementById('closeSOS');
+    document.getElementById('closeSOS');
 
 const shareSOS =
-  document.getElementById('shareSOS');
+    document.getElementById('shareSOS');
 
 const sosConfirmView =
-  document.getElementById('sosConfirmView');
+    document.getElementById('sosConfirmView');
 
 const sosLoadingView =
-  document.getElementById('sosLoadingView');
+    document.getElementById('sosLoadingView');
 
 const sosSuccessView =
-  document.getElementById('sosSuccessView');
+    document.getElementById('sosSuccessView');
 
 const sosCoordinates =
-  document.getElementById('sosCoordinates');
+    document.getElementById('sosCoordinates');
 
 const sosMapLink =
-  document.getElementById('sosMapLink');
+    document.getElementById('sosMapLink');
 
 const sosTime =
-  document.getElementById('sosTime');
+    document.getElementById('sosTime');
 
 const sosMessage =
-  document.getElementById('sosMessage');
+    document.getElementById('sosMessage');
 
 const shareStatus =
-  document.getElementById('shareStatus');
+    document.getElementById('shareStatus');
 
 const gpsStatusIcon =
-  document.getElementById('gpsStatusIcon');
+    document.getElementById('gpsStatusIcon');
 
 
-// Current emergency location
+// ------------------------------------------------------------
+// SOS STATE
+// ------------------------------------------------------------
+
 let emergencyLocation = null;
 
-// Whether SOS is currently active
 let sosIsActive = false;
 
 
@@ -250,19 +375,28 @@ let sosIsActive = false;
 
 if (sosButton) {
 
-  sosButton.addEventListener('click', () => {
+    sosButton.addEventListener('click', () => {
 
-    if (sosIsActive) {
-      showSOSView('success');
-    } else {
-      showSOSView('confirm');
-    }
+        if (sosIsActive) {
 
-    sosModal.classList.remove('hidden');
+            showSOSView('success');
 
-    document.body.style.overflow = 'hidden';
+        } else {
 
-  });
+            showSOSView('confirm');
+
+        }
+
+
+        if (sosModal) {
+
+            sosModal.classList.remove('hidden');
+
+            document.body.style.overflow = 'hidden';
+
+        }
+
+    });
 
 }
 
@@ -273,39 +407,50 @@ if (sosButton) {
 
 function closeSOSPanel() {
 
-  sosModal.classList.add('hidden');
+    if (!sosModal) return;
 
-  document.body.style.overflow = '';
+    sosModal.classList.add('hidden');
+
+    document.body.style.overflow = '';
 
 }
 
 
 if (cancelSOS) {
-  cancelSOS.addEventListener(
-    'click',
-    closeSOSPanel
-  );
+
+    cancelSOS.addEventListener(
+        'click',
+        closeSOSPanel
+    );
+
 }
 
 
 if (closeSOS) {
-  closeSOS.addEventListener(
-    'click',
-    closeSOSPanel
-  );
+
+    closeSOS.addEventListener(
+        'click',
+        closeSOSPanel
+    );
+
 }
 
 
-// Click outside modal
+// ------------------------------------------------------------
+// CLICK OUTSIDE MODAL
+// ------------------------------------------------------------
+
 if (sosModal) {
 
-  sosModal.addEventListener('click', (event) => {
+    sosModal.addEventListener('click', (event) => {
 
-    if (event.target === sosModal) {
-      closeSOSPanel();
-    }
+        if (event.target === sosModal) {
 
-  });
+            closeSOSPanel();
+
+        }
+
+    });
 
 }
 
@@ -316,13 +461,15 @@ if (sosModal) {
 
 document.addEventListener('keydown', (event) => {
 
-  if (
-    event.key === 'Escape' &&
-    sosModal &&
-    !sosModal.classList.contains('hidden')
-  ) {
-    closeSOSPanel();
-  }
+    if (
+        event.key === 'Escape' &&
+        sosModal &&
+        !sosModal.classList.contains('hidden')
+    ) {
+
+        closeSOSPanel();
+
+    }
 
 });
 
@@ -333,29 +480,41 @@ document.addEventListener('keydown', (event) => {
 
 function showSOSView(view) {
 
-  if (
-    !sosConfirmView ||
-    !sosLoadingView ||
-    !sosSuccessView
-  ) {
-    return;
-  }
+    if (
+        !sosConfirmView ||
+        !sosLoadingView ||
+        !sosSuccessView
+    ) {
+        return;
+    }
 
-  sosConfirmView.classList.add('hidden');
-  sosLoadingView.classList.add('hidden');
-  sosSuccessView.classList.add('hidden');
 
-  if (view === 'confirm') {
-    sosConfirmView.classList.remove('hidden');
-  }
+    sosConfirmView.classList.add('hidden');
 
-  if (view === 'loading') {
-    sosLoadingView.classList.remove('hidden');
-  }
+    sosLoadingView.classList.add('hidden');
 
-  if (view === 'success') {
-    sosSuccessView.classList.remove('hidden');
-  }
+    sosSuccessView.classList.add('hidden');
+
+
+    if (view === 'confirm') {
+
+        sosConfirmView.classList.remove('hidden');
+
+    }
+
+
+    if (view === 'loading') {
+
+        sosLoadingView.classList.remove('hidden');
+
+    }
+
+
+    if (view === 'success') {
+
+        sosSuccessView.classList.remove('hidden');
+
+    }
 
 }
 
@@ -366,167 +525,173 @@ function showSOSView(view) {
 
 if (activateSOS) {
 
-  activateSOS.addEventListener(
-    'click',
-    activateEmergencySOS
-  );
+    activateSOS.addEventListener(
+        'click',
+        activateEmergencySOS
+    );
 
 }
 
 
 function activateEmergencySOS() {
 
-  showSOSView('loading');
+    showSOSView('loading');
 
-  sosIsActive = false;
-
-  if (sosButton) {
-
-    sosButton.disabled = true;
-
-    sosButton.innerHTML = `
-      <span class="material-symbols-outlined text-[18px]">
-        location_searching
-      </span>
-      SOS
-    `;
-
-  }
-
-  if (!navigator.geolocation) {
-
-    showLocationError(
-      'Location services are not supported by your browser.'
-    );
-
-    return;
-  }
+    sosIsActive = false;
 
 
-  navigator.geolocation.getCurrentPosition(
+    if (sosButton) {
 
-    (position) => {
+        sosButton.disabled = true;
 
-      const {
-        latitude,
-        longitude
-      } = position.coords;
+        sosButton.innerHTML = `
+            <span class="material-symbols-outlined text-[18px]">
+                location_searching
+            </span>
+            SOS
+        `;
 
-
-      // Store emergency location
-      emergencyLocation = {
-        latitude,
-        longitude,
-        timestamp: new Date()
-      };
-
-
-      // SOS is now locally active
-      sosIsActive = true;
-
-
-      // GPS status
-      if (gpsStatusIcon) {
-
-        gpsStatusIcon.textContent =
-          'check_circle';
-
-        gpsStatusIcon.classList.remove(
-          'text-text-muted'
-        );
-
-        gpsStatusIcon.classList.add(
-          'text-green-600'
-        );
-
-      }
-
-
-      // Google Maps link
-      const mapLink =
-        `https://www.google.com/maps?q=${latitude},${longitude}`;
-
-
-      // Coordinates
-      if (sosCoordinates) {
-
-        sosCoordinates.textContent =
-          `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-
-      }
-
-
-      // Map
-      if (sosMapLink) {
-        sosMapLink.href = mapLink;
-      }
-
-
-      // Activation time
-      if (sosTime) {
-
-        sosTime.textContent =
-          formatTime(
-            emergencyLocation.timestamp
-          );
-
-      }
-
-
-      // Share status
-      if (shareStatus) {
-
-        shareStatus.textContent = 'Ready';
-
-        shareStatus.classList.remove(
-          'text-green-600',
-          'text-text-muted'
-        );
-
-        shareStatus.classList.add(
-          'text-primary'
-        );
-
-      }
-
-
-      // Message
-      if (sosMessage) {
-
-        sosMessage.textContent =
-          'Your emergency information is ready to share.';
-
-      }
-
-
-      // Small delay for reassurance UX
-      setTimeout(() => {
-
-        showSOSView('success');
-
-        updateSOSButton(true);
-
-      }, 700);
-
-    },
-
-
-    () => {
-
-      showLocationError(
-        'We could not get your location. Please enable location permission and try again.'
-      );
-
-    },
-
-
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
     }
 
-  );
+
+    if (!navigator.geolocation) {
+
+        showLocationError(
+            'Location services are not supported by your browser.'
+        );
+
+        return;
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        (position) => {
+
+            const {
+                latitude,
+                longitude
+            } = position.coords;
+
+
+            // Store emergency location
+            emergencyLocation = {
+
+                latitude,
+                longitude,
+                timestamp: new Date()
+
+            };
+
+
+            // SOS is active
+            sosIsActive = true;
+
+
+            // GPS status
+            if (gpsStatusIcon) {
+
+                gpsStatusIcon.textContent =
+                    'check_circle';
+
+                gpsStatusIcon.classList.remove(
+                    'text-text-muted'
+                );
+
+                gpsStatusIcon.classList.add(
+                    'text-green-600'
+                );
+
+            }
+
+
+            // Google Maps link
+            const mapLink =
+                `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+
+            // Coordinates
+            if (sosCoordinates) {
+
+                sosCoordinates.textContent =
+                    `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+            }
+
+
+            // Map
+            if (sosMapLink) {
+
+                sosMapLink.href = mapLink;
+
+            }
+
+
+            // Activation time
+            if (sosTime) {
+
+                sosTime.textContent =
+                    formatTime(
+                        emergencyLocation.timestamp
+                    );
+
+            }
+
+
+            // Share status
+            if (shareStatus) {
+
+                shareStatus.textContent = 'Ready';
+
+                shareStatus.classList.remove(
+                    'text-green-600',
+                    'text-text-muted'
+                );
+
+                shareStatus.classList.add(
+                    'text-primary'
+                );
+
+            }
+
+
+            // Message
+            if (sosMessage) {
+
+                sosMessage.textContent =
+                    'Your emergency information is ready to share.';
+
+            }
+
+
+            // Small delay for reassurance UX
+            setTimeout(() => {
+
+                showSOSView('success');
+
+                updateSOSButton(true);
+
+            }, 700);
+
+        },
+
+
+        () => {
+
+            showLocationError(
+                'We could not get your location. Please enable location permission and try again.'
+            );
+
+        },
+
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+
+    );
 
 }
 
@@ -537,13 +702,13 @@ function activateEmergencySOS() {
 
 function showLocationError(message) {
 
-  showSOSView('confirm');
+    showSOSView('confirm');
 
-  alert(message);
+    alert(message);
 
-  updateSOSButton(false);
+    updateSOSButton(false);
 
-  sosIsActive = false;
+    sosIsActive = false;
 
 }
 
@@ -554,47 +719,53 @@ function showLocationError(message) {
 
 function updateSOSButton(active) {
 
-  if (!sosButton) return;
+    if (!sosButton) return;
 
-  sosButton.disabled = false;
 
-  if (active) {
+    sosButton.disabled = false;
 
-    sosButton.innerHTML = `
-      <span class="material-symbols-outlined text-[17px]">
-        emergency
-      </span>
-      SOS Active
-    `;
 
-    sosButton.classList.remove(
-      'bg-red-500',
-      'hover:bg-red-600'
-    );
+    if (active) {
 
-    sosButton.classList.add(
-      'bg-red-700'
-    );
+        sosButton.innerHTML = `
+            <span class="material-symbols-outlined text-[17px]">
+                emergency
+            </span>
+            SOS Active
+        `;
 
-  } else {
 
-    sosButton.innerHTML = `
-      <span class="material-symbols-outlined text-[18px]">
-        sos
-      </span>
-      SOS
-    `;
+        sosButton.classList.remove(
+            'bg-red-500',
+            'hover:bg-red-600'
+        );
 
-    sosButton.classList.remove(
-      'bg-red-700'
-    );
 
-    sosButton.classList.add(
-      'bg-red-500',
-      'hover:bg-red-600'
-    );
+        sosButton.classList.add(
+            'bg-red-700'
+        );
 
-  }
+    } else {
+
+        sosButton.innerHTML = `
+            <span class="material-symbols-outlined text-[18px]">
+                sos
+            </span>
+            SOS
+        `;
+
+
+        sosButton.classList.remove(
+            'bg-red-700'
+        );
+
+
+        sosButton.classList.add(
+            'bg-red-500',
+            'hover:bg-red-600'
+        );
+
+    }
 
 }
 
@@ -605,38 +776,38 @@ function updateSOSButton(active) {
 
 if (shareSOS) {
 
-  shareSOS.addEventListener(
-    'click',
-    shareEmergencyInformation
-  );
+    shareSOS.addEventListener(
+        'click',
+        shareEmergencyInformation
+    );
 
 }
 
 
 async function shareEmergencyInformation() {
 
-  if (!emergencyLocation) {
+    if (!emergencyLocation) {
 
-    alert(
-      'Your emergency location has not been acquired yet.'
-    );
+        alert(
+            'Your emergency location has not been acquired yet.'
+        );
 
-    return;
-  }
-
-
-  const {
-    latitude,
-    longitude,
-    timestamp
-  } = emergencyLocation;
+        return;
+    }
 
 
-  const mapLink =
-    `https://www.google.com/maps?q=${latitude},${longitude}`;
+    const {
+        latitude,
+        longitude,
+        timestamp
+    } = emergencyLocation;
 
 
-  const message =
+    const mapLink =
+        `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+
+    const message =
 `FERENE EMERGENCY SOS
 
 I may need help.
@@ -651,64 +822,74 @@ SOS activated:
 ${formatDateTime(timestamp)}`;
 
 
-  shareSOS.disabled = true;
-  shareSOS.textContent = 'Preparing...';
+    shareSOS.disabled = true;
+
+    shareSOS.textContent = 'Preparing...';
 
 
-  try {
-
-    // Mobile / supported browsers
-    if (navigator.share) {
-
-      await navigator.share({
-        title: 'Ferene Emergency SOS',
-        text: message
-      });
-
-      markInformationShared();
-
-    }
-
-    // Desktop fallback
-    else {
-
-      await navigator.clipboard.writeText(message);
-
-      markInformationCopied();
-
-    }
-
-  } catch (error) {
-
-    // User closed the share menu
-    if (error.name === 'AbortError') {
-
-      shareSOS.disabled = false;
-      shareSOS.textContent = 'Share location';
-
-      return;
-    }
-
-
-    // Try clipboard
     try {
 
-      await navigator.clipboard.writeText(message);
+        // Mobile / supported browsers
+        if (navigator.share) {
 
-      markInformationCopied();
+            await navigator.share({
 
-    } catch {
+                title: 'Ferene Emergency SOS',
 
-      alert(
-        `Emergency information:\n\n${message}`
-      );
+                text: message
 
-      shareSOS.disabled = false;
-      shareSOS.textContent = 'Share location';
+            });
+
+
+            markInformationShared();
+
+        }
+
+        // Desktop fallback
+        else {
+
+            await navigator.clipboard.writeText(message);
+
+            markInformationCopied();
+
+        }
+
+
+    } catch (error) {
+
+        // User closed the share menu
+        if (error.name === 'AbortError') {
+
+            shareSOS.disabled = false;
+
+            shareSOS.textContent = 'Share location';
+
+            return;
+
+        }
+
+
+        // Try clipboard
+        try {
+
+            await navigator.clipboard.writeText(message);
+
+            markInformationCopied();
+
+        } catch {
+
+            alert(
+                `Emergency information:\n\n${message}`
+            );
+
+
+            shareSOS.disabled = false;
+
+            shareSOS.textContent = 'Share location';
+
+        }
 
     }
-
-  }
 
 }
 
@@ -719,39 +900,42 @@ ${formatDateTime(timestamp)}`;
 
 function markInformationShared() {
 
-  if (shareStatus) {
+    if (shareStatus) {
 
-    shareStatus.textContent =
-      'Shared from your device';
-
-    shareStatus.classList.remove(
-      'text-primary',
-      'text-text-muted'
-    );
-
-    shareStatus.classList.add(
-      'text-green-600'
-    );
-
-  }
+        shareStatus.textContent =
+            'Shared from your device';
 
 
-  if (sosMessage) {
-
-    sosMessage.textContent =
-      'Emergency information was shared from your device.';
-
-  }
+        shareStatus.classList.remove(
+            'text-primary',
+            'text-text-muted'
+        );
 
 
-  shareSOS.disabled = false;
+        shareStatus.classList.add(
+            'text-green-600'
+        );
 
-  shareSOS.innerHTML = `
-    <span class="material-symbols-outlined text-[18px] align-middle">
-      check_circle
-    </span>
-    Shared
-  `;
+    }
+
+
+    if (sosMessage) {
+
+        sosMessage.textContent =
+            'Emergency information was shared from your device.';
+
+    }
+
+
+    shareSOS.disabled = false;
+
+
+    shareSOS.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] align-middle">
+            check_circle
+        </span>
+        Shared
+    `;
 
 }
 
@@ -762,39 +946,42 @@ function markInformationShared() {
 
 function markInformationCopied() {
 
-  if (shareStatus) {
+    if (shareStatus) {
 
-    shareStatus.textContent =
-      'Copied — ready to send';
-
-    shareStatus.classList.remove(
-      'text-primary',
-      'text-text-muted'
-    );
-
-    shareStatus.classList.add(
-      'text-green-600'
-    );
-
-  }
+        shareStatus.textContent =
+            'Copied — ready to send';
 
 
-  if (sosMessage) {
-
-    sosMessage.textContent =
-      'Emergency information was copied. Send it to someone you trust.';
-
-  }
+        shareStatus.classList.remove(
+            'text-primary',
+            'text-text-muted'
+        );
 
 
-  shareSOS.disabled = false;
+        shareStatus.classList.add(
+            'text-green-600'
+        );
 
-  shareSOS.innerHTML = `
-    <span class="material-symbols-outlined text-[18px] align-middle">
-      check_circle
-    </span>
-    Copied
-  `;
+    }
+
+
+    if (sosMessage) {
+
+        sosMessage.textContent =
+            'Emergency information was copied. Send it to someone you trust.';
+
+    }
+
+
+    shareSOS.disabled = false;
+
+
+    shareSOS.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] align-middle">
+            check_circle
+        </span>
+        Copied
+    `;
 
 }
 
@@ -805,88 +992,94 @@ function markInformationCopied() {
 
 if (deactivateSOS) {
 
-  deactivateSOS.addEventListener(
-    'click',
-    () => {
+    deactivateSOS.addEventListener(
+        'click',
+        () => {
 
-      const confirmed = confirm(
-        'Deactivate Emergency SOS?\n\n' +
-        'This will end the active SOS state in Ferene.'
-      );
+            const confirmed = confirm(
+                'Deactivate Emergency SOS?\n\n' +
+                'This will end the active SOS state in Ferene.'
+            );
 
-      if (!confirmed) return;
 
-      deactivateEmergencySOS();
+            if (!confirmed) return;
 
-    }
-  );
+
+            deactivateEmergencySOS();
+
+        }
+    );
 
 }
 
 
 function deactivateEmergencySOS() {
 
-  sosIsActive = false;
+    sosIsActive = false;
 
-  emergencyLocation = null;
-
-
-  // Reset GPS indicator
-  if (gpsStatusIcon) {
-
-    gpsStatusIcon.textContent =
-      'radio_button_unchecked';
-
-    gpsStatusIcon.classList.remove(
-      'text-green-600'
-    );
-
-    gpsStatusIcon.classList.add(
-      'text-text-muted'
-    );
-
-  }
+    emergencyLocation = null;
 
 
-  // Reset share status
-  if (shareStatus) {
+    // Reset GPS indicator
+    if (gpsStatusIcon) {
 
-    shareStatus.textContent =
-      'Inactive';
-
-    shareStatus.classList.remove(
-      'text-green-600',
-      'text-primary'
-    );
-
-    shareStatus.classList.add(
-      'text-text-muted'
-    );
-
-  }
+        gpsStatusIcon.textContent =
+            'radio_button_unchecked';
 
 
-  // Reset message
-  if (sosMessage) {
-
-    sosMessage.textContent =
-      'Emergency mode has been deactivated.';
-
-  }
+        gpsStatusIcon.classList.remove(
+            'text-green-600'
+        );
 
 
-  // Reset header
-  updateSOSButton(false);
+        gpsStatusIcon.classList.add(
+            'text-text-muted'
+        );
+
+    }
 
 
-  // Give the user a moment to see the state change
-  setTimeout(() => {
+    // Reset share status
+    if (shareStatus) {
 
-    closeSOSPanel();
+        shareStatus.textContent =
+            'Inactive';
 
-    showSOSView('confirm');
 
-  }, 800);
+        shareStatus.classList.remove(
+            'text-green-600',
+            'text-primary'
+        );
+
+
+        shareStatus.classList.add(
+            'text-text-muted'
+        );
+
+    }
+
+
+    // Reset message
+    if (sosMessage) {
+
+        sosMessage.textContent =
+            'Emergency mode has been deactivated.';
+
+    }
+
+
+    // Reset header
+    updateSOSButton(false);
+
+
+    // Give user a moment to see state change
+    setTimeout(() => {
+
+        closeSOSPanel();
+
+        showSOSView('confirm');
+
+    }, 800);
 
 }
 
@@ -897,114 +1090,25 @@ function deactivateEmergencySOS() {
 
 function formatTime(date) {
 
-  return date.toLocaleTimeString(
-    [],
-    {
-      hour: '2-digit',
-      minute: '2-digit'
-    }
-  );
+    return date.toLocaleTimeString(
+        [],
+        {
+            hour: '2-digit',
+            minute: '2-digit'
+        }
+    );
 
 }
 
 
 function formatDateTime(date) {
 
-  return date.toLocaleString(
-    [],
-    {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }
-  );
-=======
-
-    const budget =
-        document
-            .getElementById("budgetInput")
-            .value;
-
-
-    const interests =
-        document
-            .getElementById("interestsInput")
-            .value
-            .trim();
-
-
-    if (!from) {
-
-        alert("Please enter where you are travelling from.");
-
-        return;
-
-    }
-
-
-    if (!destination) {
-
-        alert("Please enter your destination.");
-
-        return;
-
-    }
-
-
-    if (!startDate || !endDate) {
-
-        alert("Please select your travel dates.");
-
-        return;
-
-    }
-
-
-    if (!budget) {
-
-        alert("Please select your budget style.");
-
-        return;
-
-    }
-
-
-    if (!interests) {
-
-        alert("Please enter at least one travel interest.");
-
-        return;
-
-    }
-
-
-    const preferences = {
-
-        from: from,
-
-        destination: destination,
-
-        startDate: startDate,
-
-        endDate: endDate,
-
-        budget: budget,
-
-        interests: interests
-
-    };
-
-
-    localStorage.setItem(
-
-        "ferenePreferences",
-
-        JSON.stringify(preferences)
-
+    return date.toLocaleString(
+        [],
+        {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        }
     );
-
-
-    window.location.href =
-        "swipe.html";
->>>>>>> friend/main
 
 }
