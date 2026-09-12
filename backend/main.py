@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
+
 # =================================================
 # GEMINI CONFIGURATION
 # =================================================
@@ -17,9 +18,11 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY is missing from .env")
 
+
 gemini_client = genai.Client(
     api_key=GEMINI_API_KEY
 )
+
 
 # =================================================
 # SOCKET.IO CONFIGURATION
@@ -172,12 +175,18 @@ hidden_gems = [
 # DISTANCE CALCULATION
 # =================================================
 
-def calculate_distance(lat1, lon1, lat2, lon2):
+def calculate_distance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+):
 
     radius = 6371
 
     lat1 = math.radians(lat1)
     lon1 = math.radians(lon1)
+
     lat2 = math.radians(lat2)
     lon2 = math.radians(lon2)
 
@@ -199,6 +208,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
     return radius * c
 
+
 # =================================================
 # GEMINI CHAT API
 # =================================================
@@ -206,9 +216,13 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 @fastapi_app.post("/chat")
 async def chat_with_gemini(data: dict):
 
-    user_message = data.get("message", "").strip()
+    user_message = data.get(
+        "message",
+        ""
+    ).strip()
 
     if not user_message:
+
         return {
             "status": "error",
             "message": "Message is required"
@@ -248,12 +262,16 @@ User request:
 
     except Exception as e:
 
-        print("Gemini Error:", e)
+        print(
+            "Gemini Error:",
+            e
+        )
 
         return {
             "status": "error",
             "message": "Unable to get response from Gemini"
         }
+
 
 # =================================================
 # API HOME
@@ -273,11 +291,9 @@ async def home():
 
 @fastapi_app.get("/recommendations/nearby")
 async def get_nearby_recommendations(
-
     latitude: float,
     longitude: float,
     limit: int = 10
-
 ):
 
     recommendations = []
@@ -285,12 +301,10 @@ async def get_nearby_recommendations(
     for gem in hidden_gems:
 
         distance = calculate_distance(
-
             latitude,
             longitude,
             gem["latitude"],
             gem["longitude"]
-
         )
 
         gem_data = gem.copy()
@@ -305,28 +319,20 @@ async def get_nearby_recommendations(
         )
 
     recommendations.sort(
-
         key=lambda x: (
-
             x["tourism_pressure"],
             x["distance"]
-
         )
-
     )
 
     return {
-
         "status": "success",
-
         "count": min(
             limit,
             len(recommendations)
         ),
-
         "recommendations":
             recommendations[:limit]
-
     }
 
 
@@ -338,15 +344,44 @@ async def get_nearby_recommendations(
 async def get_all_recommendations():
 
     return {
-
         "status": "success",
-
         "count": len(hidden_gems),
-
         "recommendations":
             hidden_gems
-
     }
+
+
+# =================================================
+# CHAT MESSAGE HISTORY (IN-MEMORY, PER SERVER RUN)
+# =================================================
+#
+# Structure:
+#
+# chat_history = {
+#     "travel-group": [
+#         {"username": "...", "message": "...", "sender_id": "..."},
+#         ...
+#     ]
+# }
+#
+# Capped at the last 100 messages per room.
+# =================================================
+
+chat_history = {}
+
+MAX_HISTORY_PER_ROOM = 100
+
+
+def add_message_to_history(room, entry):
+
+    if room not in chat_history:
+        chat_history[room] = []
+
+    chat_history[room].append(entry)
+
+    # Keep only the most recent MAX_HISTORY_PER_ROOM messages.
+    if len(chat_history[room]) > MAX_HISTORY_PER_ROOM:
+        chat_history[room] = chat_history[room][-MAX_HISTORY_PER_ROOM:]
 
 
 # =================================================
@@ -354,15 +389,24 @@ async def get_all_recommendations():
 # =================================================
 
 @sio.event
-async def connect(sid, environ):
+async def connect(
+    sid,
+    environ
+):
 
-    print(f"User connected: {sid}")
+    print(
+        f"User connected: {sid}"
+    )
 
 
 @sio.event
-async def disconnect(sid):
+async def disconnect(
+    sid
+):
 
-    print(f"User disconnected: {sid}")
+    print(
+        f"User disconnected: {sid}"
+    )
 
 
 # =================================================
@@ -370,9 +414,14 @@ async def disconnect(sid):
 # =================================================
 
 @sio.event
-async def join_room(sid, data):
+async def join_room(
+    sid,
+    data
+):
 
-    print("JOIN ROOM EVENT RECEIVED")
+    print("\n=================================")
+    print("JOIN ROOM EVENT")
+    print("Socket ID:", sid)
 
     room = data.get(
         "room",
@@ -389,18 +438,41 @@ async def join_room(sid, data):
         room
     )
 
-    print(f"{username} joined room: {room}")
+    print("Username:", username)
+    print("Room:", room)
+    print("=================================\n")
+
+    # -------------------------------------------------
+    # SEND EXISTING ROOM HISTORY ONLY TO THIS SOCKET
+    # -------------------------------------------------
+    #
+    # This is a separate event ("chat_history") from
+    # "receive_message" so the frontend never confuses
+    # old messages with brand-new ones.
+    # -------------------------------------------------
+
+    room_history = chat_history.get(room, [])
 
     await sio.emit(
-
-        "system_message",
-
+        "chat_history",
         {
-            "message": f"{username} joined the group!"
+            "room": room,
+            "messages": room_history
         },
+        room=sid
+    )
 
+    # -------------------------------------------------
+    # INFORM EVERYONE THAT A USER JOINED
+    # -------------------------------------------------
+
+    await sio.emit(
+        "system_message",
+        {
+            "message":
+                f"{username} joined the group!"
+        },
         room=room
-
     )
 
 
@@ -409,9 +481,10 @@ async def join_room(sid, data):
 # =================================================
 
 @sio.event
-async def send_message(sid, data):
-
-    print("SEND MESSAGE EVENT RECEIVED")
+async def send_message(
+    sid,
+    data
+):
 
     room = data.get(
         "room",
@@ -428,22 +501,39 @@ async def send_message(sid, data):
         ""
     ).strip()
 
-    if message:
+    print("MESSAGE FROM SOCKET:", sid)
+    print("ROOM:", room)
+    print("MESSAGE:", message)
 
-        print(f"[{room}] {username}: {message}")
+    if not message:
+        return
 
-        await sio.emit(
+    # =================================================
+    # BUILD THE MESSAGE PAYLOAD ONCE
+    # =================================================
+    #
+    # The SAME payload is broadcast to every socket in
+    # the room, including the sender. There is no
+    # per-participant looping and no separately
+    # computed "is_sender" flag from the backend.
+    #
+    # The frontend decides left/right by comparing
+    # sender_id to its own socket.id.
+    # =================================================
 
-            "receive_message",
+    payload = {
+        "username": username,
+        "message": message,
+        "sender_id": sid
+    }
 
-            {
-                "username": username,
-                "message": message
-            },
+    add_message_to_history(room, payload)
 
-            room=room
-
-        )
+    await sio.emit(
+        "receive_message",
+        payload,
+        room=room
+    )
 
 
 # =================================================
@@ -451,9 +541,6 @@ async def send_message(sid, data):
 # =================================================
 
 app = socketio.ASGIApp(
-
     sio,
-
     other_asgi_app=fastapi_app
-
 )
